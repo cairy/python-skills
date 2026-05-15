@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mac-barcode-read"
+version = "0.1.0"
+description = "当需要在 macOS 上读取单张本地图片中的 1D/QR 条码并返回结构化 JSON 时使用；不提供批量、视频或 PDF 处理。"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pyobjc-core",
+    "pyobjc-framework-Cocoa",
+    "pyobjc-framework-Quartz",
+    "pyobjc-framework-Vision",
+]
+
+[project.urls]
+Homepage = "https://github.com/cairy/python-skills"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mac_barcode_read*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

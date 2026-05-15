@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mac-ocr-text"
+version = "0.1.0"
+description = "当用户需要在 macOS 上对单张图片做本地 OCR、并支持区域识别（像素/比例混合输入）时使用；不提供批量、PDF 版面分析或云端 OCR。"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "ocrmac>=1.0.1",
+  "pillow>=10.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/cairy/python-skills"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mac_ocr_text*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,21 @@
+{
+  "skill_name": "mac-ocr-text",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "对 evals/files/blank.ppm 进行整图文字识别，不传 --region。",
+      "expected_output": "stdout 为 success=true 的 JSON，data.regions 存在且长度为 1，box 为 [0,0,1,1]。",
+      "files": [
+        "evals/files/blank.ppm"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "对 evals/files/blank.ppm 传入两个区域：--region 10,10,20,20 和 --region 0.1,0.1,0.2,0.2。",
+      "expected_output": "stdout 为 success=true 的 JSON，data.regions 长度为 2，区域按输入顺序输出，坐标已统一为归一化。",
+      "files": [
+        "evals/files/blank.ppm"
+      ]
+    }
+  ]
+}

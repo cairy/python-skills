@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "prompt": "对单张本地图片执行条码读取，未传 --region 与 --barcode-type，返回标准成功 JSON。",
+    "expected_output": "stdout 为 success=true 的 JSON，且 data.image_path 与 data.codes 字段存在；data.codes 为数组（可为空）。"
+  },
+  {
+    "id": 2,
+    "prompt": "传入非法参数 --min-confidence 1.2 调用脚本。",
+    "expected_output": "命令失败退出，stdout 不输出 success=true JSON，stderr 包含错误信息与 success=false 的错误 JSON。"
+  }
+]
