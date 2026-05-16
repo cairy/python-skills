@@ -7,6 +7,12 @@
 - `data.codes` 为条码数组，字段统一为 `value`、`barcode_type`、`bbox`、`confidence`。
 - 无识别结果时返回空数组，仍为成功响应。
 
+## 坐标系（对外契约）
+- `--region` 与返回的 `bbox` 均使用**归一化 top-left** 坐标：`(x, y, w, h)`，原点在图像左上角，y 向下增大。
+- 区域分量支持像素/比例混合判别（与 `mac-ocr-text` 相同规则）：`x,y` 为 `<1` 比例 / `>=1` 像素；`w,h` 为 `<=1` 比例 / `>1` 像素。
+- 内部调用 Apple Vision 时会自动转换为 Vision 的 lower-left 坐标；调用方**无需**手动翻转 y 轴。
+- 识别路径默认使用 Vision `regionOfInterest`（整图 ROI），不做 Python 侧裁图。
+
 ## 码制可用性策略
 - 默认不传 `--barcode-type` 时，使用内置默认集合；若系统不支持其中部分码制，会自动降级为可用子集继续执行。
 - 显式传入 `--barcode-type` 时，若包含当前系统不可用码制，将立即报错并退出（退出码 `1`）。
@@ -57,5 +63,5 @@ print(payload)
 
 ## 测试
 ```bash
-pytest tests/test_contract.py
+pytest tests/
 ```

@@ -5,7 +5,12 @@
 ## 功能介绍
 - 单张图片 OCR：返回结构化 `regions` 结果。
 - 区域识别：支持 0/1/多个区域，不传区域时等价整图。
-- 区域输入支持像素与比例按分量自动判别，输出统一为归一化坐标。
+- 区域输入支持像素与比例按分量自动判别，输出统一为归一化 **top-left** 坐标。
+
+## 坐标系（对外契约）
+- `regions[].box`（识别区域）与 `segments[].bbox`（文字框）均为**全图归一化 top-left**：`(x, y, w, h)`，原点在左上角。
+- 与 `mac-barcode-read` 使用相同的区域像素/比例判别规则（见下文「区域阈值规则」）。
+- 实现上对每个区域先 PIL 裁切再 OCR；`vision` 后端返回的裁切图 bbox 会自动从 Vision lower-left 转为全图 top-left；`livetext` 后端 bbox 在 ocrmac 内已转为 top-left，再映射到全图。
 
 ## 安装方式
 ```bash

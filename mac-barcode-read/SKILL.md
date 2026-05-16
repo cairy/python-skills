@@ -16,6 +16,7 @@ compatibility:
 ## 可处理
 - 单张本地图片路径输入。
 - 条码结果标准化输出（`value`、`barcode_type`、`bbox`、`confidence`）。
+- `--region` 与 `bbox` 对外统一为归一化 **top-left** 坐标；Vision lower-left 仅内部适配。
 - 无结果时返回空数组并保持 `success=true`。
 
 ## 不支持

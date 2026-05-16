@@ -17,6 +17,7 @@ compatibility:
 - 单张本地图片路径调用（CLI）。
 - Python 原生调用（路径 / `bytes` / `PIL.Image.Image`）。
 - 区域参数按分量自动判别像素与比例：`x,y` 使用 `<1` 比例 / `>=1` 像素；`w,h` 使用 `<=1` 比例 / `>1` 像素。
+- `regions[].box` 与 `segments[].bbox` 对外统一为全图归一化 **top-left** 坐标（与 `mac-barcode-read` 一致）。
 
 ## 不支持
 - 批量图片、目录递归、视频帧 OCR。

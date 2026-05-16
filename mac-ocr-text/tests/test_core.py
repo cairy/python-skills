@@ -74,3 +74,20 @@ def test_include_boxes_false_returns_null_bbox_and_confidence():
     assert seg["text"] == "hello"
     assert seg["bbox"] is None
     assert seg["confidence"] is None
+
+
+def test_segment_bbox_vision_coords_mapped_to_full_top_left():
+    """DummyOCR 模拟 vision 裁切图 bbox，应映射为全图 top-left。"""
+    result = core.recognize_image_text(image=_image_bytes(100, 100), regions=None)
+    seg = result["regions"][0]["segments"][0]
+    # vision crop bbox (0.1, 0.2, 0.3, 0.4) -> crop top-left y = 1 - 0.6 = 0.4
+    assert seg["bbox"] == pytest.approx([0.1, 0.4, 0.3, 0.4])
+
+
+def test_segment_bbox_maps_through_partial_region():
+    result = core.recognize_image_text(
+        image=_image_bytes(100, 100),
+        regions=[(0.1, 0.1, 0.5, 0.25)],
+    )
+    seg = result["regions"][0]["segments"][0]
+    assert seg["bbox"] == pytest.approx([0.15, 0.2, 0.15, 0.1])

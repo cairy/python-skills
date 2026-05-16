@@ -18,6 +18,30 @@ Framework = Literal["vision", "livetext"]
 RecognitionLevel = Literal["accurate", "fast"]
 LivetextUnit = Literal["token", "line"]
 RegionTuple = tuple[float, float, float, float]
+"""归一化矩形 (x, y, w, h)，左上角原点（top-left）。"""
+
+
+def _vision_y_to_top_left_y(y_vision: float, h: float) -> float:
+    """Vision 归一化 y（左下角原点）转为 top-left 归一化 y。"""
+    return 1.0 - (float(y_vision) + float(h))
+
+
+def _bbox_crop_to_full_top_left(
+    bbox: Sequence[float],
+    *,
+    region: RegionTuple,
+    framework: Framework,
+) -> list[float]:
+    """将裁切图上的归一化 bbox 映射为全图 top-left 归一化坐标。
+
+    - ``vision``：ocrmac 返回 Vision 左下角原点，需先翻转为裁切图 top-left。
+    - ``livetext``：ocrmac 已输出裁切图 top-left，仅做区域偏移与缩放。
+    """
+    x, y, w, h = (float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3]))
+    if framework == "vision":
+        y = _vision_y_to_top_left_y(y, h)
+    rx, ry, rw, rh = region
+    return [rx + x * rw, ry + y * rh, w * rw, h * rh]
 
 
 class TextSegmentDict(TypedDict):
@@ -52,7 +76,8 @@ def recognize_image_text(
 
     Args:
         image: 输入图像，支持路径、`bytes`、`PIL.Image.Image`。
-        regions: 识别区域列表，元素为 `(x, y, w, h)`。`None` 或空序列表示整图。
+        regions: 识别区域列表，元素为 `(x, y, w, h)`（top-left 归一化或像素/比例混合）。
+            `None` 或空序列表示整图。
         framework: OCR 后端。`vision` 为默认；`livetext` 用于 token/line 粒度。
         recognition_level: 仅 `vision` 生效。`accurate` 偏精度，`fast` 偏速度。
         languages: 语言偏好（BCP-47 列表），如 `["zh-Hans", "en"]`。
@@ -95,7 +120,12 @@ def recognize_image_text(
             unit=livetext_unit,
         )
         raw = ocr.recognize()
-        segments = _to_segments(raw=raw, include_boxes=include_boxes)
+        segments = _to_segments(
+            raw=raw,
+            include_boxes=include_boxes,
+            region=region,
+            framework=framework,
+        )
         region_outputs.append(
             {
                 "region_index": idx,
@@ -169,6 +199,7 @@ def _normalize_regions(
     width: int,
     height: int,
 ) -> list[RegionTuple]:
+    """归一化区域为 top-left 坐标（与 mac-barcode-read 对外契约一致）。"""
     if width <= 0 or height <= 0:
         raise ValueError("图像宽高必须为正数")
 
@@ -224,7 +255,13 @@ def _crop_image_by_region(image: Image.Image, region: RegionTuple) -> Image.Imag
     return image.crop((x0, y0, x1, y1))
 
 
-def _to_segments(raw: Any, *, include_boxes: bool) -> list[TextSegmentDict]:
+def _to_segments(
+    raw: Any,
+    *,
+    include_boxes: bool,
+    region: RegionTuple,
+    framework: Framework,
+) -> list[TextSegmentDict]:
     segments: list[TextSegmentDict] = []
     if include_boxes:
         for item in raw:
@@ -233,7 +270,11 @@ def _to_segments(raw: Any, *, include_boxes: bool) -> list[TextSegmentDict]:
                 {
                     "text": str(text),
                     "confidence": float(conf),
-                    "bbox": [float(v) for v in bbox],
+                    "bbox": _bbox_crop_to_full_top_left(
+                        bbox,
+                        region=region,
+                        framework=framework,
+                    ),
                 }
             )
         return segments

@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 Region = tuple[float, float, float, float]
+"""归一化矩形 (x, y, w, h)。对外 API 使用左上角原点（top-left）。"""
+
 DEFAULT_BARCODE_TYPES: frozenset[str] = frozenset(
     {
         "ean8",
@@ -144,14 +146,35 @@ def _normalize_symbology(raw_symbology: Any) -> str:
     return "".join(ch for ch in symbology if ch.isalnum() or ch == "_")
 
 
+def _vision_y_to_top_left_y(y_vision: float, h: float) -> float:
+    """Vision 归一化 y（左下角原点）转为 top-left 归一化 y。"""
+    return 1.0 - (float(y_vision) + float(h))
+
+
+def _top_left_y_to_vision_y(y_top: float, h: float) -> float:
+    """top-left 归一化 y 转为 Vision regionOfInterest / boundingBox 的 y。"""
+    return 1.0 - (float(y_top) + float(h))
+
+
+def _region_top_left_to_vision(region: Region) -> Region:
+    """将 top-left 归一化区域转为 Vision ROI（左下角原点）。"""
+    x, y, w, h = region
+    return (float(x), _top_left_y_to_vision_y(y, h), float(w), float(h))
+
+
+def _bbox_vision_to_top_left_xywh(x: float, y_vision: float, w: float, h: float) -> list[float]:
+    """Vision 归一化 bbox 转为对外 top-left [x, y, w, h]。"""
+    return [float(x), _vision_y_to_top_left_y(y_vision, h), float(w), float(h)]
+
+
 def _bbox_to_xywh(bbox: Any) -> list[float]:
-    """统一 bbox 到归一化 [x,y,w,h]。"""
+    """将 Vision boundingBox 统一为对外 top-left 归一化 [x, y, w, h]。"""
     if hasattr(bbox, "origin") and hasattr(bbox, "size"):
         x = float(getattr(bbox.origin, "x", 0.0))
         y = float(getattr(bbox.origin, "y", 0.0))
         w = float(getattr(bbox.size, "width", 0.0))
         h = float(getattr(bbox.size, "height", 0.0))
-        return [x, y, w, h]
+        return _bbox_vision_to_top_left_xywh(x, y, w, h)
 
     if isinstance(bbox, Sequence) and len(bbox) == 2:
         origin, size = bbox
@@ -161,10 +184,13 @@ def _bbox_to_xywh(bbox: Any) -> list[float]:
             and isinstance(size, Sequence)
             and len(size) == 2
         ):
-            return [float(origin[0]), float(origin[1]), float(size[0]), float(size[1])]
+            x, y = origin
+            w, h = size
+            return _bbox_vision_to_top_left_xywh(float(x), float(y), float(w), float(h))
 
     if isinstance(bbox, Sequence) and len(bbox) == 4:
-        return [float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3])]
+        x, y, w, h = bbox
+        return _bbox_vision_to_top_left_xywh(float(x), float(y), float(w), float(h))
 
     return [0.0, 0.0, 0.0, 0.0]
 
@@ -176,11 +202,14 @@ def _detect_raw_codes(
     region: Region,
     allowed_symbologies: Sequence[Any],
 ) -> list[dict[str, Any]]:
-    """在单个区域执行 Vision 检测，返回原始结果列表。"""
+    """在单个 top-left 归一化区域内执行 Vision 检测，返回原始结果列表。"""
     request = vision_module.VNDetectBarcodesRequest.alloc().init()
     if allowed_symbologies:
         request.setSymbologies_(list(allowed_symbologies))
-    request.setRegionOfInterest_(((region[0], region[1]), (region[2], region[3])))
+    vision_region = _region_top_left_to_vision(region)
+    request.setRegionOfInterest_(
+        ((vision_region[0], vision_region[1]), (vision_region[2], vision_region[3]))
+    )
 
     try:
         handler = vision_module.VNImageRequestHandler.alloc().initWithURL_options_(image_url, None)
@@ -307,12 +336,13 @@ def _normalize_single_region(
     width: int,
     height: int,
 ) -> Region:
-    """将单个区域按规格归一化（暂不做合法性校验）。"""
+    """将单个区域按规格归一化为 top-left 坐标（不翻转 y 轴）。"""
     x, y, w, h = region
     x_norm = x / width if x >= 1 else x
     y_norm = y / height if y >= 1 else y
     w_norm = w / width if w > 1 else w
     h_norm = h / height if h > 1 else h
+
     normalized = (float(x_norm), float(y_norm), float(w_norm), float(h_norm))
     _validate_normalized_region(normalized)
     return normalized
@@ -324,7 +354,10 @@ def normalize_regions(
     width: int,
     height: int,
 ) -> list[Region]:
-    """归一化区域列表；未提供时返回整图区域。"""
+    """归一化区域列表为 top-left 坐标；未提供时返回整图区域。
+
+    返回值可直接用于对外 API；传入 Vision 前需经 `_region_top_left_to_vision` 转换。
+    """
     source_regions: Sequence[Region] = regions or ((0.0, 0.0, 1.0, 1.0),)
     return [
         _normalize_single_region(region, width=width, height=height)
