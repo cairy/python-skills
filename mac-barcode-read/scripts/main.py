@@ -65,7 +65,7 @@ def run() -> None:
         description="在 macOS 上读取单张图片中的 1D/QR 条码；成功时 stdout 仅输出 JSON。",
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("image_path", help="待识别的本地图片路径")
+    parser.add_argument("image", help="待识别的本地图片路径")
     parser.add_argument(
         "--region",
         action="append",
@@ -105,7 +105,7 @@ def run() -> None:
     try:
         args = parser.parse_args()
         result = read_barcodes_from_image(
-            args.image_path,
+            args.image,
             regions=_parse_regions(args.region),
             barcode_types=_parse_barcode_types(args.barcode_type),
             max_results=args.max_results,

@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import os
 import platform
+import tempfile
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+
+from PIL import Image
 
 Region = tuple[float, float, float, float]
 """归一化矩形 (x, y, w, h)。对外 API 使用左上角原点（top-left）。"""
@@ -198,7 +203,7 @@ def _bbox_to_xywh(bbox: Any) -> list[float]:
 def _detect_raw_codes(
     *,
     vision_module: Any,
-    image_url: Any,
+    handler: Any,
     region: Region,
     allowed_symbologies: Sequence[Any],
 ) -> list[dict[str, Any]]:
@@ -212,7 +217,6 @@ def _detect_raw_codes(
     )
 
     try:
-        handler = vision_module.VNImageRequestHandler.alloc().initWithURL_options_(image_url, None)
         perform_result = handler.performRequests_error_([request], None)
     except Exception as exc:
         message = str(exc)
@@ -365,9 +369,63 @@ def normalize_regions(
     ]
 
 
+def _pil_image_to_cgimage(image: Image.Image) -> Any:
+    """将 PIL Image 转为 Quartz CGImage（纯内存，无磁盘 I/O）。"""
+    import Quartz  # type: ignore[import-not-found]
+    from Foundation import NSData  # type: ignore[import-not-found]
+
+    if image.mode != "RGBA":
+        image = image.convert("RGBA")
+    width, height = image.size
+    raw = image.tobytes()
+
+    data = NSData.dataWithBytes_length_(raw, len(raw))
+    provider = Quartz.CGDataProviderCreateWithCFData(data)
+    colorspace = Quartz.CGColorSpaceCreateDeviceRGB()
+    bitmap_info = getattr(Quartz, "kCGImageAlphaLast", Quartz.kCGImageAlphaPremultipliedLast)
+
+    cgimage = Quartz.CGImageCreate(
+        width, height,
+        8, 32,
+        width * 4,
+        colorspace,
+        bitmap_info,
+        provider,
+        None,
+        False,
+        Quartz.kCGRenderingIntentDefault,
+    )
+    return cgimage
+
+
+def _load_image(
+    image: str | Path | bytes | Image.Image,
+) -> tuple[Image.Image, Path | None]:
+    """统一加载图像，返回 (PIL Image, 文件路径或 None)。
+
+    Raises:
+        FileNotFoundError: 路径不存在。
+        ValueError: 类型不支持。
+    """
+    if isinstance(image, (str, Path)):
+        path = Path(image).expanduser().resolve()
+        if not path.is_file():
+            raise FileNotFoundError(f"图片文件不存在或不是文件：{image}")
+        with Image.open(path) as im:
+            return im.convert("RGB"), path
+
+    if isinstance(image, bytes):
+        return Image.open(BytesIO(image)).convert("RGB"), None
+
+    if isinstance(image, Image.Image):
+        return image.convert("RGB"), None
+
+    raise ValueError("image 必须是 str/Path/bytes/PIL.Image.Image")
+
+
 def build_success_payload(
     *,
-    image_path: str,
+    image_path: str | None,
     codes: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
     """构建成功响应载荷。"""
@@ -382,17 +440,32 @@ def build_success_payload(
 
 
 def read_barcodes_from_image(
-    image_path: str | Path,
+    image: str | Path | bytes | Image.Image,
     *,
     regions: Sequence[tuple[float, float, float, float]] | None = None,
     barcode_types: Sequence[str] | None = None,
     max_results: int | None = None,
     min_confidence: float = 0.0,
 ) -> dict[str, Any]:
-    """读取本地图片中的条码并返回统一结构。"""
-    resolved_path = Path(image_path).expanduser().resolve()
-    if not resolved_path.is_file():
-        raise FileNotFoundError(f"图片文件不存在或不是文件：{image_path}")
+    """读取图片中的条码并返回统一结构。
+
+    Args:
+        image: 输入图像，支持路径、bytes、PIL.Image.Image。
+        regions: 识别区域列表，元素为 ``(x, y, w, h)``（top-left 归一化或像素/比例混合）。
+            ``None`` 或空序列表示整图。
+        barcode_types: 条码类型过滤条件。
+        max_results: 限制返回条码数量；``None`` 表示不限制。
+        min_confidence: 最小置信度阈值（0~1）。
+
+    Returns:
+        dict[str, Any]: 识别结果，包含 ``image_path``（内存输入时为 ``None``）和 ``codes``。
+
+    Raises:
+        FileNotFoundError: 路径不存在或不是文件。
+        ValueError: 参数非法或图像类型不支持。
+        ImportError: Vision 依赖不可用或非 macOS 环境。
+    """
+    img_obj, source_path = _load_image(image)
 
     if min_confidence < 0 or min_confidence > 1:
         raise ValueError("min_confidence 必须在 [0,1] 范围内")
@@ -411,13 +484,21 @@ def read_barcodes_from_image(
         copy_props_at_index,
         prop_keys,
     ) = _load_vision_dependencies()
-    width, height, image_url = _load_image_size_and_url(
-        image_path=resolved_path,
-        ns_url_cls=ns_url_cls,
-        create_image_source=create_image_source,
-        copy_props_at_index=copy_props_at_index,
-        prop_keys=prop_keys,
-    )
+
+    if source_path is not None:
+        width, height, image_url = _load_image_size_and_url(
+            image_path=source_path,
+            ns_url_cls=ns_url_cls,
+            create_image_source=create_image_source,
+            copy_props_at_index=copy_props_at_index,
+            prop_keys=prop_keys,
+        )
+        handler = vision_module.VNImageRequestHandler.alloc().initWithURL_options_(image_url, None)
+    else:
+        width, height = img_obj.size
+        cgimage = _pil_image_to_cgimage(img_obj)
+        handler = vision_module.VNImageRequestHandler.alloc().initWithCGImage_options_(cgimage, None)
+
     normalized_regions = normalize_regions(regions=regions, width=width, height=height)
     allowed_symbologies = _resolve_vision_symbologies(
         vision_module=vision_module,
@@ -430,7 +511,7 @@ def read_barcodes_from_image(
         raw_codes.extend(
             _detect_raw_codes(
                 vision_module=vision_module,
-                image_url=image_url,
+                handler=handler,
                 region=region,
                 allowed_symbologies=allowed_symbologies,
             )
@@ -445,13 +526,13 @@ def read_barcodes_from_image(
         confidence_filtered_codes = confidence_filtered_codes[:max_results]
 
     return {
-        "image_path": str(resolved_path),
+        "image_path": str(source_path) if source_path is not None else None,
         "codes": confidence_filtered_codes,
     }
 
 
 def recognize_barcodes(
-    image: str | Path,
+    image: str | Path | bytes | Image.Image,
     *,
     regions: Sequence[tuple[float, float, float, float]] | None = None,
     barcode_types: Sequence[str] | None = None,

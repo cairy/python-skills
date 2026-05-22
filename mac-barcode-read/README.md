@@ -53,12 +53,19 @@ python scripts/main.py "./sample.png" --region 10,20,120,80 --barcode-type qrcod
 ```python
 from mac_barcode_read import build_success_payload, read_barcodes_from_image
 
+# 文件路径
 result = read_barcodes_from_image("sample.png")
 payload = build_success_payload(
     image_path=result["image_path"],
     codes=result["codes"],
 )
 print(payload)
+
+# bytes / PIL Image（纯内存，无磁盘 I/O）
+from PIL import Image
+
+img = Image.open("sample.png")
+result = read_barcodes_from_image(img)
 ```
 
 ## 测试

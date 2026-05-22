@@ -9,12 +9,13 @@ compatibility:
 ---
 
 # 技能概述
-本技能提供 `mac-barcode-read` 原子能力：输入单张本地图片路径，返回统一 JSON 结构。  
+本技能提供 `mac-barcode-read` 原子能力：输入单张本地图片路径或内存图像对象（`bytes` / `PIL.Image.Image`），返回统一 JSON 结构。
 当前版本聚焦命令行协议与数据契约，便于上层 Agent 稳定调用。
 
 # 能力边界
 ## 可处理
-- 单张本地图片路径输入。
+- 单张本地图片路径输入（CLI）。
+- Python 原生调用（路径 / `bytes` / `PIL.Image.Image`）。
 - 条码结果标准化输出（`value`、`barcode_type`、`bbox`、`confidence`）。
 - `--region` 与 `bbox` 对外统一为归一化 **top-left** 坐标；Vision lower-left 仅内部适配。
 - 无结果时返回空数组并保持 `success=true`。
@@ -54,10 +55,17 @@ pytest tests/test_contract.py
 ```python
 from mac_barcode_read import build_success_payload, read_barcodes_from_image
 
+# 文件路径
 result = read_barcodes_from_image("example.png")
 payload = build_success_payload(
     image_path=result["image_path"],
     codes=result["codes"],
 )
 print(payload["success"])
+
+# bytes / PIL Image（纯内存，无磁盘 I/O）
+from PIL import Image
+
+img = Image.open("example.png")
+result = read_barcodes_from_image(img)
 ```

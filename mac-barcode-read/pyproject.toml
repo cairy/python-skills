@@ -9,6 +9,7 @@ description = "当需要在 macOS 上读取单张本地图片中的 1D/QR 条码
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "pillow>=10.0.0",
     "pyobjc-core",
     "pyobjc-framework-Cocoa",
     "pyobjc-framework-Quartz",
