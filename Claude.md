@@ -10,62 +10,58 @@ version: 1.0.0
 **可复制模板与长示例**（各文件填空块、示例代码）：见 [`技能库模版.md`](技能库模版.md)。
 
 ## 核心原则
-1.  单一职责：一个文件夹 = 一个原子功能 = 一个标准 Agent Skill
+1.  **能力域原则**：一个文件夹 = 一个能力域 = 一个标准 Agent Skill。能力域内可包含多个相关子功能（通过 CLI 参数或子命令暴露），拆分的依据是是否有共享依赖/基础设施、触发场景是否同质
 2.  人类优先：原生 Python 库面向普通开发者设计，AI 仅做标准化调用
 3.  官方兼容：100% 遵循 agentskills.io 开放标准
 4.  零侵入：不改造业务代码，不新增 AI 专属封装层
 
-## 固定目录结构（不可修改）
-```
-skill-name/
-├── SKILL.md
-├── scripts/
-│   └── main.py
-├── evals/
-│   ├── evals.json
-│   └── files/
-├── skill_name/
-│   ├── __init__.py
-│   └── core.py
-├── examples/
-├── tests/
-├── pyproject.toml
-└── README.md
-```
+## 能力域拆分指导
 
-可选：若单个 `SKILL.md` 正文过长，可在技能根目录增加 `references/`（或同级补充目录），**仅**通过现有 7 个章节**正文内的句子**引导按需阅读其中文件；不得新增第八个顶层章节，不得改变上表既有路径名称与层级。
+### 合成一个 skill 的信号
+- 多个功能共享同一类核心依赖（如都依赖 PyPDF）
+- 多个功能共享底层基础设施（文件加载、校验、错误处理）
+- 用户描述需求时不会明确区分「用 skill A 还是 skill B」，而是说「我要处理 PDF」
+- 各功能的 `description` 可以用一句话自然覆盖
 
-## 各文件强制规范
-### 1. scripts/main.py
-- 必须使用 PEP 723 内嵌依赖声明（格式：# /// script 开头，# /// 结尾）
-- 必须使用 argparse 实现命令行参数，强制支持 --help 查看用法
-- 禁止交互式输入，仅支持命令行传参，不使用 stdin 传JSON
-- 业务逻辑全部下沉至 skill_name/core.py，脚本仅做参数解析、调用转发、结果输出
-- **stdout / stderr**：成功时仅将表示成功的 **JSON** 写入 **stdout**；日志、人类可读错误信息，以及失败时的结构化 JSON（若有）**一律**写入 **stderr**。**失败时 stdout 不得输出 JSON**（可保持无输出），以便调用方以「stdout 是否为成功 JSON」判定结果。
-- 遵循幂等设计，支持合理退出码（0=成功，1=错误）
+### 拆成多个 skill 的信号
+- 功能之间无共享依赖或基础设施（如条码识别 vs OCR）
+- 触发场景完全不同，一个 `description` 难以同时覆盖
+- 某个功能在特定平台才有意义（如 macOS-only 的 Vision API）
 
-### 2. SKILL.md
-- 严格使用约定的标准模板，YAML 头部格式固定，不修改字段
-- name 字段必须与技能根文件夹名（短横线命名）完全一致
-- 引用脚本必须使用相对路径（如 scripts/main.py），符合 Agent Skills 规范
-- 必须包含7个固定章节：技能概述、能力边界、前置依赖、可用脚本、调用工作流、评测信息、开发者使用指引，不删减、不新增
-- **YAML `description`（每个技能的加载摘要）**：须符合 [Optimizing skill descriptions](https://agentskills.io/skill-creation/optimizing-descriptions) 与 agentskills 规范中的 description 字段要求——**祈使**句式（说明「何时应使用本技能」）、面向**用户意图**而非实现细节、与「能力边界」一致（含易混淆的**不适用**场景）、总长度 **≤1024** 字符；可选按该文方法维护触发评测句并迭代。
+### 反模式示例
+- **不要**把 `pdf-split`、`pdf-merge`、`pdf-extract` 拆成三个独立 skill —— 依赖重复、代码重复、维护成本高
+- **应该**合成一个 `pdf-tools` skill，内部用 `core.py` 做共享基础设施，`split.py`、`merge.py`、`extract.py` 做子功能模块
 
-### 3. evals/ 目录
-- 必须包含 evals.json（基础评测用例）和 files/（评测样本文件）
-- 初期仅维护基础用例，不创建外置 workspace、iteration 等复杂流程
-- 用例需包含 prompt、expected_output，可选 files 字段
+## 目录结构约束
 
-### 4. skill_name/ 源码包
-- 核心业务逻辑全部放在 core.py，遵循 PEP8 规范，添加完整类型提示和文档字符串
-- __init__.py 仅用于导出 core.py 中的核心函数，不写业务逻辑
-- 不新增任何 AI 专属适配代码，完全以普通开发者使用体验优先
+固定不可变动的部分（文件名与相对位置）：`SKILL.md`、`scripts/main.py`、`evals/`、`pyproject.toml`、`README.md`。`
 
-### 5. 其他工程文件
-- pyproject.toml：标准 Python 包配置，支持 pip install -e . 本地安装
-- README.md：面向普通开发者，重点说明安装方式、原生 Python 调用示例
-- examples/：存放开发者可直接运行的使用场景示例，逐步沉淀
-- tests/：存放业务代码单元测试，保障核心逻辑正确性，与 evals/ 完全隔离
+`skill_name/` 内可按功能拆分为多模块（`core.py` 做共享基础设施，`split.py` 等做子功能）。当 skill 覆盖多个子功能时，`scripts/main.py` 可通过参数 `--action` 或 `argparse` 子命令暴露多入口。
+
+详细目录模板与填空示例见 [`技能库模版.md`](技能库模版.md)。
+
+可选：若单个 `SKILL.md` 正文过长，可在技能根目录增加 `references/`，**仅**通过现有 7 个章节**正文内的句子**引导按需阅读其中文件；不得新增第八个顶层章节。
+
+## 各文件红线约束
+
+### scripts/main.py
+- PEP 723 内嵌依赖声明；argparse + `--help`；禁止交互式输入
+- 仅做参数解析、命令分发、结果输出，业务逻辑下沉至 `skill_name/`
+- **stdout 仅输出成功 JSON**；日志、错误信息、失败 JSON **一律 stderr**
+- 退出码：0=成功，1=错误
+
+### SKILL.md
+- YAML 头部字段固定；`name` 必须与目录名（kebab-case）逐字一致
+- 7 个固定章节不增删：技能概述、能力边界、前置依赖、可用脚本、调用工作流、评测信息、开发者使用指引
+- `description`：祈使句式、面向用户意图、含 near-miss 边界、≤1024 字符
+
+### skill_name/
+- `core.py` 存放共享基础设施；子功能可拆为独立模块
+- `__init__.py` 仅导出函数，不写业务逻辑
+- 所有模块遵循 PEP8、完整类型提示、Google 风格文档字符串
+- **禁止**任何 AI 专属适配代码
+
+详细模板与填空示例见 [`技能库模版.md`](技能库模版.md)。
 
 ## Gotchas
 - **`name` 与目录名**：`SKILL.md` 中 YAML `name` 必须与技能根文件夹名（kebab-case）**逐字一致**，否则 Agent 与工具链易错配。
@@ -79,15 +75,15 @@ skill-name/
 3.  禁止为适配 AI，修改原生 Python 函数的参数、返回值、调用习惯
 4.  禁止打乱固定目录层级、私自新增/删除约定的文件夹/文件
 5.  禁止使用非官方自定义调用协议，仅遵循标准命令行参数调用
-6.  禁止将多个无关功能合并为一个技能库，必须保持原子化
+6.  禁止将多个无关能力域合并为一个技能库；同一能力域内的相关子功能应合并在同一个 skill 中
 
 ## 重构&新建工作流
-1.  分析原始 Python 代码，按单一职责拆分为独立原子功能
-2.  为每个原子功能创建固定目录结构，严格遵循命名规范
-3.  将业务逻辑迁移至 skill_name/core.py，保持原生接口不变
-4.  按规范编写 scripts/main.py 入口脚本，实现参数解析和结果转发
-5.  按模板生成 SKILL.md，补充基础评测用例（evals/evals.json）
-6.  生成基础单元测试、示例文件、pyproject.toml 和 README.md
+1.  分析原始 Python 代码，按**能力域**划分（依据：共享依赖/基础设施、触发场景同质性）
+2.  为每个能力域创建目录结构，严格遵循命名规范
+3.  将共享基础设施迁移至 `skill_name/core.py`，各子功能按模块拆分（如 `split.py`、`merge.py`），保持原生接口不变
+4.  按规范编写 `scripts/main.py` 入口脚本，通过参数或子命令暴露多入口，实现参数解析和结果转发
+5.  按模板生成 `SKILL.md`，`description` 覆盖整个能力域，补充基础评测用例（`evals/evals.json`）
+6.  生成基础单元测试、示例文件、`pyproject.toml` 和 `README.md`
 7.  **交付前校验（最低门槛）**：对本 skill 下 Python 路径执行 `python -m compileall`；在技能根目录执行 `uv run scripts/main.py --help`（或项目约定的等价命令）且帮助信息正确；`evals/evals.json` 可被解析且含至少 2 条用例；若已生成 `tests/`，核心用例应能通过；全库无语法错误、符合本规范。
 
 ## 与 agentskills.io 创作指南的关系（落实一致性结论）
