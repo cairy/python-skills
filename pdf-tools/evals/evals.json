@@ -1,0 +1,35 @@
+{
+  "skill_name": "pdf-tools",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "查看 evals/files/sample.pdf 的元数据，包括页数、标题、作者等信息",
+      "expected_output": "stdout 输出 success=true 的 JSON，data 中包含 page_count、title、author 等字段",
+      "files": ["evals/files/sample.pdf"]
+    },
+    {
+      "id": 2,
+      "prompt": "将 evals/files/sample.pdf 的第 1 页拆分为单独的文件 output.pdf",
+      "expected_output": "stdout 输出 success=true 的 JSON，data 为输出文件路径；output.pdf 应存在且只有 1 页",
+      "files": ["evals/files/sample.pdf"]
+    },
+    {
+      "id": 3,
+      "prompt": "从 evals/files/sample.pdf 提取所有纯文本内容",
+      "expected_output": "stdout 输出 success=true 的 JSON，data 为提取的文本字符串",
+      "files": ["evals/files/sample.pdf"]
+    },
+    {
+      "id": 4,
+      "prompt": "从 evals/files/sample.pdf 提取结构化文本块，要求包含坐标信息",
+      "expected_output": "stdout 输出 success=true 的 JSON，data 为列表，每个元素包含 text、x、y、width、height 字段",
+      "files": ["evals/files/sample.pdf"]
+    },
+    {
+      "id": 5,
+      "prompt": "合并 evals/files/a.pdf 和 evals/files/b.pdf 为 merged.pdf",
+      "expected_output": "stdout 输出 success=true 的 JSON，data 为 merged.pdf 路径；文件应存在且包含两源文件的总页数",
+      "files": ["evals/files/a.pdf", "evals/files/b.pdf"]
+    }
+  ]
+}
