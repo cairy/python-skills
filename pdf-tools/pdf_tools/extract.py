@@ -124,50 +124,49 @@ def extract_images(
     for p in page_indices:
         page = doc[p - 1]
         img_list = page.get_images(full=True)
-
         for img_info in img_list:
-            xref = img_info[0]
-            base_image = doc.extract_image(xref)
+                xref = img_info[0]
+                base_image = doc.extract_image(xref)
 
-            if base_image is None:
-                continue
+                if base_image is None:
+                    continue
 
-            ext = base_image["ext"]
-            image_bytes = base_image["image"]
-            width = base_image["width"]
-            height = base_image["height"]
+                ext = base_image["ext"]
+                image_bytes = base_image["image"]
+                width = base_image["width"]
+                height = base_image["height"]
 
-            # ext 回退处理
-            if not ext or ext.lower() == "n/a":
-                ext = _infer_image_ext(base_image)
+                # ext 回退处理
+                if not ext or ext.lower() == "n/a":
+                    ext = _infer_image_ext(base_image)
 
-            if output_mode == "files":
-                output_path = Path(output_dir) / f"img_{img_index:04d}.{ext}"
-                output_path.write_bytes(image_bytes)
-                images.append(
-                    ExtractedImage(
-                        page=p,
-                        index=img_index,
-                        width=width,
-                        height=height,
-                        ext=ext,
-                        path=str(output_path),
+                if output_mode == "files":
+                    output_path = Path(output_dir) / f"img_{img_index:04d}.{ext}"
+                    output_path.write_bytes(image_bytes)
+                    images.append(
+                        ExtractedImage(
+                            page=p,
+                            index=img_index,
+                            width=width,
+                            height=height,
+                            ext=ext,
+                            path=str(output_path),
+                        )
                     )
-                )
-            else:  # base64
-                b64 = base64.b64encode(image_bytes).decode("ascii")
-                images.append(
-                    ExtractedImage(
-                        page=p,
-                        index=img_index,
-                        width=width,
-                        height=height,
-                        ext=ext,
-                        base64_data=b64,
+                else:  # base64
+                    b64 = base64.b64encode(image_bytes).decode("ascii")
+                    images.append(
+                        ExtractedImage(
+                            page=p,
+                            index=img_index,
+                            width=width,
+                            height=height,
+                            ext=ext,
+                            base64_data=b64,
+                        )
                     )
-                )
 
-            img_index += 1
+                img_index += 1
 
     return images
 

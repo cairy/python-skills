@@ -15,6 +15,7 @@
   extract-text        提取纯文本
   extract-text-blocks 提取结构化文本（带坐标）
   extract-images      提取嵌入图片
+  render-pages        将页面渲染为图片
 
 成功时 stdout 输出 JSON：{"success": true, "data": ...}
 失败时 stderr 输出错误信息和错误 JSON。
@@ -37,6 +38,7 @@ from pdf_tools.core import open_pdf, parse_page_ranges
 from pdf_tools.extract import extract_images, extract_text_blocks, extract_text_plain
 from pdf_tools.metadata import get_metadata
 from pdf_tools.pages import merge_pdfs, rotate_pages, split_pages
+from pdf_tools.render import render_pages
 
 
 def _success(data: Any) -> None:
@@ -137,6 +139,22 @@ def cmd_extract_images(args: argparse.Namespace) -> None:
     _success([img.__dict__ for img in images])
 
 
+def cmd_render_pages(args: argparse.Namespace) -> None:
+    with open_pdf(args.input) as doc:
+        if args.pages:
+            pages = parse_page_ranges(args.pages, doc.page_count)
+        else:
+            pages = None
+        rendered = render_pages(
+            doc,
+            pages=pages,
+            output_dir=args.output_dir,
+            dpi=args.dpi,
+            fmt=args.format,
+        )
+    _success([p.__dict__ for p in rendered])
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="PDF 处理工具 — 元数据查看、页面操作、内容提取",
@@ -183,6 +201,14 @@ def main() -> int:
     p_ext_img.add_argument("--output-mode", choices=["files", "base64"], default="files", help="输出模式 (默认: files)")
     p_ext_img.add_argument("--output-dir", "-d", help="输出目录（files 模式时必填）")
 
+    # render-pages
+    p_render = subparsers.add_parser("render-pages", help="将页面渲染为图片")
+    _add_input_arg(p_render)
+    _add_pages_arg(p_render)
+    p_render.add_argument("--output-dir", "-d", required=True, help="输出目录")
+    p_render.add_argument("--dpi", type=int, default=200, help="渲染分辨率 (默认: 200)")
+    p_render.add_argument("--format", choices=["png", "jpeg"], default="png", help="输出格式 (默认: png)")
+
     args = parser.parse_args()
 
     command_map = {
@@ -193,6 +219,7 @@ def main() -> int:
         "extract-text": cmd_extract_text,
         "extract-text-blocks": cmd_extract_text_blocks,
         "extract-images": cmd_extract_images,
+        "render-pages": cmd_render_pages,
     }
 
     try:

@@ -107,3 +107,4 @@ def corrupted_file(tmp_path: Path) -> Path:
     path = tmp_path / "corrupted.pdf"
     path.write_bytes(b"This is not a valid PDF file content")
     return path
+

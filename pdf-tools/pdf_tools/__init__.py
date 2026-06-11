@@ -15,6 +15,7 @@ from pdf_tools.extract import (
 )
 from pdf_tools.metadata import get_metadata
 from pdf_tools.pages import merge_pdfs, rotate_pages, split_pages
+from pdf_tools.render import RenderedPage, render_pages
 
 __all__ = [
     "open_pdf",
@@ -23,6 +24,7 @@ __all__ = [
     "MetadataInfo",
     "TextBlock",
     "ExtractedImage",
+    "RenderedPage",
     "get_metadata",
     "split_pages",
     "merge_pdfs",
@@ -30,4 +32,5 @@ __all__ = [
     "extract_text_plain",
     "extract_text_blocks",
     "extract_images",
+    "render_pages",
 ]

@@ -134,6 +134,35 @@ class TestExtractImagesCommand:
         assert "output-dir" in result.stderr.lower() or "output_dir" in result.stderr.lower()
 
 
+class TestRenderPagesCommand:
+    """测试 render-pages 子命令。"""
+
+    def test_render_pages_success(self, sample_single_page_pdf: Path, tmp_path: Path) -> None:
+        output_dir = tmp_path / "rendered"
+        result = run_cli([
+            "render-pages", str(sample_single_page_pdf),
+            "--output-dir", str(output_dir),
+        ])
+        assert result.returncode == 0
+        output = json.loads(result.stdout)
+        assert output["success"] is True
+        assert isinstance(output["data"], list)
+        assert len(output["data"]) == 1
+        assert output["data"][0]["page"] == 1
+        assert Path(output["data"][0]["path"]).exists()
+
+    def test_render_pages_jpeg_format(self, sample_single_page_pdf: Path, tmp_path: Path) -> None:
+        output_dir = tmp_path / "rendered"
+        result = run_cli([
+            "render-pages", str(sample_single_page_pdf),
+            "--output-dir", str(output_dir),
+            "--format", "jpeg",
+        ])
+        assert result.returncode == 0
+        output = json.loads(result.stdout)
+        assert output["data"][0]["ext"] == "jpeg"
+
+
 class TestErrorHandling:
     """测试错误处理和 JSON 输出。"""
 

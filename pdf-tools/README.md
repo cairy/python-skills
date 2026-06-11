@@ -16,6 +16,7 @@ pdf-tools 是一个基于 PyMuPDF 的跨平台 PDF 处理原子技能，覆盖�
   - 纯文本提取（多页以双换行分隔）
   - 结构化文本块（带 top-left 坐标和尺寸）
   - 嵌入位图图片（保存文件或 base64 编码）
+- 页面渲染为图片（将 PDF 页面光栅化为 png/jpeg）
 
 ## 安装方式
 
@@ -58,6 +59,7 @@ with open_pdf("document.pdf") as doc:
 | `extract-text` | 提取纯文本 | `input` | `--pages` |
 | `extract-text-blocks` | 提取结构化文本 | `input` | `--pages` |
 | `extract-images` | 提取图片 | `input` | `--pages`, `--output-mode`, `--output-dir` |
+| `render-pages` | 渲染页面为图片 | `input`, `--output-dir` | `--pages`, `--dpi`, `--format` |
 
 ## 异常说明
 

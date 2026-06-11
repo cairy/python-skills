@@ -92,3 +92,4 @@ class TestExtractImages:
         assert output_dir.exists()
         assert len(images) > 0
         assert Path(images[0].path).exists()
+

@@ -15,7 +15,7 @@ compatibility:
 本 Skill 提供跨平台 PDF 处理能力，基于 PyMuPDF 单依赖实现。核心能力包括：
 - **元数据查看**：页数、标题、作者、PDF 版本等信息
 - **页面操作**：按页码拆分、多文件合并、指定页面旋转
-- **内容提取**：纯文本提取、结构化文本块（带 top-left 坐标）、嵌入图片提取
+- **内容提取**：纯文本提取、结构化文本块（带 top-left 坐标）、嵌入图片提取、页面渲染为图片
 
 所有功能通过 `scripts/main.py` 命令行脚本暴露，AI Agent 可直接调用；同时提供原生 Python API 供开发者集成。
 
@@ -29,6 +29,7 @@ compatibility:
 - 纯文本提取（含多页合并）
 - 结构化文本块提取（含 top-left 坐标和尺寸）
 - 嵌入位图图片提取（保存为文件或 base64 编码）
+- 页面渲染为图片（将 PDF 页面光栅化为 png/jpeg）
 - 加密 PDF（需提供密码，CLI 暂不支持密码参数）
 
 ## 不支持
@@ -80,6 +81,9 @@ python3 scripts/main.py extract-text-blocks input.pdf
 
 # 提取图片
 python3 scripts/main.py extract-images input.pdf --output-mode files --output-dir ./imgs
+
+# 渲染页面为图片
+python3 scripts/main.py render-pages input.pdf --output-dir ./pages --dpi 200 --format png
 ```
 
 ## AI 调用约束
