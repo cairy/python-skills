@@ -58,7 +58,7 @@ def sample_with_image_pdf(tmp_path: Path) -> Path:
     page.insert_text((72, 72), "Document with image")
 
     # 创建一个简单的 100x50 RGB 图片数据 (red rectangle)
-    pix = fitz.Pixmap(fitz.csRGB, 100, 50)
+    pix = fitz.Pixmap(fitz.csRGB, fitz.IRect(0, 0, 100, 50))
     for y in range(50):
         for x in range(100):
             pix.set_pixel(x, y, (255, 0, 0))
