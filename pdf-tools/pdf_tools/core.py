@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import re
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, List, Optional, Tuple, Union
@@ -140,15 +140,11 @@ def open_documents(
         ValueError: 某个文件损坏/加密/非有效 PDF 时抛出
     """
     docs: List[fitz.Document] = []
-    try:
+    with ExitStack() as stack:
         for p in paths:
-            with open_pdf(p, password=password) as doc:
-                docs.append(doc)
+            doc = stack.enter_context(open_pdf(p, password=password))
+            docs.append(doc)
         yield docs
-    finally:
-        for doc in docs:
-            if not doc.is_closed:
-                doc.close()
 
 
 # ---------------------------------------------------------------------------
