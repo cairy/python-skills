@@ -1,0 +1,8 @@
+[project]
+name = "python-skills"
+version = "0.1.0"
+description = "Python 原子技能库"
+requires-python = ">=3.10"
+
+[tool.uv.workspace]
+members = ["pdf-tools", "mac-barcode-read", "mac-ocr-text"]
