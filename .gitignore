@@ -4,4 +4,4 @@
 __pycache__/
 *.egg-info/
 .eggs/
-docs/superpowers/
+docs/superpowers/.worktrees/
