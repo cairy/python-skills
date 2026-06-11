@@ -5,7 +5,7 @@ from pathlib import Path
 import fitz
 import pytest
 
-from pdf_tools.core import open_pdf, parse_page_ranges
+from pdf_tools.core import open_pdf, parse_page_ranges, parse_pdf_date
 
 
 class TestOpenPdf:
@@ -135,3 +135,36 @@ class TestParsePageRanges:
     def test_empty_range_part_skipped(self) -> None:
         result = parse_page_ranges("1,,3", max_pages=10)
         assert result == [1, 3]
+
+
+class TestParsePdfDate:
+    """测试 parse_pdf_date 函数。"""
+
+    def test_full_format_with_timezone(self) -> None:
+        result = parse_pdf_date("D:20240115083000+08'00'")
+        assert result == "2024-01-15T08:30:00+08:00"
+
+    def test_utc_marker(self) -> None:
+        result = parse_pdf_date("D:20240115083000Z")
+        assert result == "2024-01-15T08:30:00Z"
+
+    def test_no_timezone(self) -> None:
+        result = parse_pdf_date("D:20240115083000")
+        assert result == "2024-01-15T08:30:00"
+
+    def test_date_only(self) -> None:
+        result = parse_pdf_date("D:20240115")
+        assert result == "2024-01-15"
+
+    def test_none_returns_none(self) -> None:
+        assert parse_pdf_date(None) is None
+
+    def test_empty_string_returns_none(self) -> None:
+        assert parse_pdf_date("") is None
+
+    def test_invalid_format_returns_none(self) -> None:
+        assert parse_pdf_date("not a date") is None
+
+    def test_negative_timezone(self) -> None:
+        result = parse_pdf_date("D:20240115083000-05'00'")
+        assert result == "2024-01-15T08:30:00-05:00"

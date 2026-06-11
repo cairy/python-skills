@@ -214,3 +214,60 @@ def parse_page_ranges(range_str: str, max_pages: int) -> List[int]:
         raise ValueError("页码范围不能为空")
 
     return sorted(pages)
+
+
+def parse_pdf_date(raw: Optional[str]) -> Optional[str]:
+    """将 PyMuPDF 返回的 PDF 日期字符串转换为 ISO 8601 格式。
+
+    PyMuPDF 返回的格式示例：D:20240115083000+08'00'
+    转换后格式：2024-01-15T08:30:00+08:00
+
+    支持的输入变体（PDF 标准允许部分省略）：
+    - D:20240115083000+08'00' — 完整格式（含时区）
+    - D:20240115083000Z — UTC 标记
+    - D:20240115083000 — 无时区
+    - D:20240115 — 仅日期部分（省略时分秒）
+
+    Args:
+        raw: PyMuPDF 返回的原始日期字符串
+
+    Returns:
+        ISO 8601 格式字符串，或 None（输入为空/格式错误）
+    """
+    if not raw:
+        return None
+
+    # 尝试匹配各种格式
+    # 完整格式：D:YYYYMMDDHHMMSS+HH'MM' 或 D:YYYYMMDDHHMMSS-HH'MM'
+    full_pattern = re.compile(
+        r"^D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})"
+        r"([+-])(\d{2})'?(\d{2})'?"
+    )
+    m = full_pattern.match(raw)
+    if m:
+        year, month, day, hour, minute, second = m.group(1, 2, 3, 4, 5, 6)
+        tz_sign, tz_hour, tz_minute = m.group(7, 8, 9)
+        return f"{year}-{month}-{day}T{hour}:{minute}:{second}{tz_sign}{tz_hour}:{tz_minute}"
+
+    # UTC 标记：D:YYYYMMDDHHMMSSZ
+    utc_pattern = re.compile(r"^D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})Z$")
+    m = utc_pattern.match(raw)
+    if m:
+        year, month, day, hour, minute, second = m.group(1, 2, 3, 4, 5, 6)
+        return f"{year}-{month}-{day}T{hour}:{minute}:{second}Z"
+
+    # 无时区：D:YYYYMMDDHHMMSS
+    no_tz_pattern = re.compile(r"^D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$")
+    m = no_tz_pattern.match(raw)
+    if m:
+        year, month, day, hour, minute, second = m.group(1, 2, 3, 4, 5, 6)
+        return f"{year}-{month}-{day}T{hour}:{minute}:{second}"
+
+    # 仅日期：D:YYYYMMDD
+    date_only_pattern = re.compile(r"^D:(\d{4})(\d{2})(\d{2})$")
+    m = date_only_pattern.match(raw)
+    if m:
+        year, month, day = m.group(1, 2, 3)
+        return f"{year}-{month}-{day}"
+
+    return None
