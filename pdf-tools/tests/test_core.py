@@ -5,7 +5,7 @@ from pathlib import Path
 import fitz
 import pytest
 
-from pdf_tools.core import open_pdf
+from pdf_tools.core import open_pdf, parse_page_ranges
 
 
 class TestOpenPdf:
@@ -71,3 +71,67 @@ class TestOpenPdf:
         with pytest.raises(ValueError):
             with open_pdf(tmp_path) as doc:
                 pass  # pragma: no cover
+
+
+class TestParsePageRanges:
+    """测试 parse_page_ranges 函数。"""
+
+    def test_single_range(self) -> None:
+        result = parse_page_ranges("1-3", max_pages=10)
+        assert result == [1, 2, 3]
+
+    def test_multiple_ranges(self) -> None:
+        result = parse_page_ranges("1-3,5,7-10", max_pages=10)
+        assert result == [1, 2, 3, 5, 7, 8, 9, 10]
+
+    def test_overlapping_ranges_deduplicated(self) -> None:
+        result = parse_page_ranges("1-3,2-4", max_pages=10)
+        assert result == [1, 2, 3, 4]
+
+    def test_single_page(self) -> None:
+        result = parse_page_ranges("5", max_pages=10)
+        assert result == [5]
+
+    def test_reversed_range_raises(self) -> None:
+        with pytest.raises(ValueError, match="倒序"):
+            parse_page_ranges("5-1", max_pages=10)
+
+    def test_empty_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="空"):
+            parse_page_ranges("", max_pages=10)
+
+    def test_zero_page_raises(self) -> None:
+        with pytest.raises(ValueError, match="页码"):
+            parse_page_ranges("0-2", max_pages=10)
+
+    def test_negative_page_raises(self) -> None:
+        with pytest.raises(ValueError, match="页码"):
+            parse_page_ranges("-1", max_pages=10)
+
+    def test_out_of_bounds_raises(self) -> None:
+        with pytest.raises(ValueError, match="越界"):
+            parse_page_ranges("1-15", max_pages=10)
+
+    def test_max_pages_zero_any_range_raises(self) -> None:
+        with pytest.raises(ValueError, match="越界"):
+            parse_page_ranges("1", max_pages=0)
+
+    def test_strips_whitespace(self) -> None:
+        result = parse_page_ranges("  1-3 , 5  ", max_pages=10)
+        assert result == [1, 2, 3, 5]
+
+    def test_single_page_equals_max(self) -> None:
+        result = parse_page_ranges("10", max_pages=10)
+        assert result == [10]
+
+    def test_negative_range_start_raises(self) -> None:
+        with pytest.raises(ValueError, match="页码"):
+            parse_page_ranges("-1-3", max_pages=10)
+
+    def test_negative_range_end_raises(self) -> None:
+        with pytest.raises(ValueError, match="页码"):
+            parse_page_ranges("3--1", max_pages=10)
+
+    def test_empty_range_part_skipped(self) -> None:
+        result = parse_page_ranges("1,,3", max_pages=10)
+        assert result == [1, 3]

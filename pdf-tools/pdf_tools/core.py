@@ -149,3 +149,68 @@ def open_documents(
         for doc in docs:
             if not doc.is_closed:
                 doc.close()
+
+
+# ---------------------------------------------------------------------------
+# 工具函数
+# ---------------------------------------------------------------------------
+
+def parse_page_ranges(range_str: str, max_pages: int) -> List[int]:
+    """将页码范围字符串解析为有序的 1-based 页码列表。
+
+    支持的格式："1-3,5,7-10"
+
+    Args:
+        range_str: 页码范围字符串
+        max_pages: 最大页码（文档总页数）
+
+    Returns:
+        List[int]: 去重并升序排列的 1-based 页码列表
+
+    Raises:
+        ValueError: 格式错误、倒序、越界、空串等
+    """
+    cleaned = range_str.strip()
+    if not cleaned:
+        raise ValueError("页码范围不能为空")
+
+    pages: set[int] = set()
+
+    for part in cleaned.split(","):
+        part = part.strip()
+        if not part:
+            continue
+
+        if "-" in part:
+            try:
+                start_str, end_str = part.split("-", 1)
+                start = int(start_str.strip())
+                end = int(end_str.strip())
+            except ValueError as e:
+                raise ValueError(f"页码范围格式错误：{part}") from e
+
+            if start <= 0 or end <= 0:
+                raise ValueError(f"页码必须从 1 开始：{part}")
+            if start > end:
+                raise ValueError(f"页码范围不能倒序：{part}")
+            if end > max_pages:
+                raise ValueError(f"页码越界（最大 {max_pages}）：{part}")
+
+            pages.update(range(start, end + 1))
+        else:
+            try:
+                page = int(part)
+            except ValueError as e:
+                raise ValueError(f"页码格式错误：{part}") from e
+
+            if page <= 0:
+                raise ValueError(f"页码必须从 1 开始：{part}")
+            if page > max_pages:
+                raise ValueError(f"页码越界（最大 {max_pages}）：{part}")
+
+            pages.add(page)
+
+    if not pages:
+        raise ValueError("页码范围不能为空")
+
+    return sorted(pages)
