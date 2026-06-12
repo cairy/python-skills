@@ -3,6 +3,7 @@
 from pdf_tools.core import (
     ExtractedImage,
     MetadataInfo,
+    PageFallback,
     TextBlock,
     open_documents,
     open_pdf,
@@ -16,6 +17,7 @@ from pdf_tools.extract import (
 from pdf_tools.metadata import get_metadata
 from pdf_tools.pages import merge_pdfs, rotate_pages, split_pages
 from pdf_tools.render import RenderedPage, render_pages
+from pdf_tools.strategies import too_many_small_elements
 
 __all__ = [
     "open_pdf",
@@ -24,6 +26,7 @@ __all__ = [
     "MetadataInfo",
     "TextBlock",
     "ExtractedImage",
+    "PageFallback",
     "RenderedPage",
     "get_metadata",
     "split_pages",
@@ -33,4 +36,5 @@ __all__ = [
     "extract_text_blocks",
     "extract_images",
     "render_pages",
+    "too_many_small_elements",
 ]

@@ -7,7 +7,7 @@ import re
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple, Union
+from typing import Callable, Generator, List, Literal, Optional, Tuple, Union
 
 import fitz
 
@@ -15,6 +15,10 @@ import fitz
 # ---------------------------------------------------------------------------
 # 类型定义
 # ---------------------------------------------------------------------------
+
+PageFallback = Callable[[fitz.Page], bool]
+"""判断 PDF 页面是否需要使用渲染作为图片提取 fallback 的策略函数。"""
+
 
 @dataclass
 class MetadataInfo:
@@ -51,7 +55,11 @@ class TextBlock:
 
 @dataclass
 class ExtractedImage:
-    """提取的图片信息。path 与 base64_data 恰好一个非 None。"""
+    """提取的图片信息。path 与 base64_data 恰好一个非 None。
+
+    source 字段标识图片来源："extracted" 表示从 PDF 嵌入资源中提取，
+    "rendered" 表示通过 fallback 策略渲染整页得到。
+    """
 
     page: int
     index: int
@@ -60,6 +68,7 @@ class ExtractedImage:
     ext: str
     path: Optional[str] = None
     base64_data: Optional[str] = None
+    source: Literal["extracted", "rendered"] = "extracted"
 
 
 # ---------------------------------------------------------------------------

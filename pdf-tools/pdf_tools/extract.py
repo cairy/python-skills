@@ -8,7 +8,8 @@ from typing import List, Literal, Optional, Union
 
 import fitz
 
-from pdf_tools.core import ExtractedImage, TextBlock
+from pdf_tools.core import ExtractedImage, PageFallback, TextBlock
+from pdf_tools.render import render_pages
 
 
 def extract_text_plain(
@@ -88,6 +89,9 @@ def extract_images(
     pages: Optional[List[int]] = None,
     output_mode: Literal["files", "base64"] = "files",
     output_dir: Optional[Union[str, Path]] = None,
+    fallback: Optional[PageFallback] = None,
+    fallback_dpi: int = 200,
+    fallback_fmt: Literal["png", "jpeg"] = "png",
 ) -> List[ExtractedImage]:
     """提取 PDF 中嵌入的位图图片（XObject Image）。
 
@@ -100,9 +104,14 @@ def extract_images(
         pages: 要提取的页码列表（1-based），None 表示全部页面
         output_mode: "files" 保存到 output_dir 并返回文件路径；"base64" 返回 base64 编码数据
         output_dir: output_mode="files" 时必填，指定输出目录
+        fallback: 页面 fallback 策略函数。接收 fitz.Page，返回 True 表示该页应渲染为图片
+            而非提取嵌入图片。返回 False 表示正常提取。
+        fallback_dpi: fallback 触发渲染时的分辨率，默认 200
+        fallback_fmt: fallback 触发渲染时的输出格式，默认 "png"
 
     Raises:
-        ValueError: output_mode="files" 但 output_dir 为 None 时抛出
+        ValueError: output_mode="files" 但 output_dir 为 None 时抛出；
+            或 fallback 与 output_mode="base64" 同时使用时抛出
 
     Returns:
         List[ExtractedImage]
@@ -114,8 +123,13 @@ def extract_images(
     if output_mode == "files" and output_dir is None:
         raise ValueError("output_mode='files' 时必须提供 output_dir")
 
+    if fallback is not None and output_mode == "base64":
+        raise ValueError("fallback 渲染暂不支持 output_mode='base64'")
+
+    output_path: Optional[Path] = None
     if output_mode == "files":
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
 
     page_indices = _resolve_pages(doc, pages)
     images: List[ExtractedImage] = []
@@ -123,6 +137,30 @@ def extract_images(
 
     for p in page_indices:
         page = doc[p - 1]
+
+        if fallback is not None and fallback(page):
+            rendered = render_pages(
+                doc,
+                pages=[p],
+                output_dir=output_path,
+                dpi=fallback_dpi,
+                fmt=fallback_fmt,
+            )
+            for r in rendered:
+                images.append(
+                    ExtractedImage(
+                        page=p,
+                        index=img_index,
+                        width=r.width,
+                        height=r.height,
+                        ext=r.ext,
+                        path=r.path,
+                        source="rendered",
+                    )
+                )
+                img_index += 1
+            continue
+
         img_list = page.get_images(full=True)
         for img_info in img_list:
                 xref = img_info[0]
@@ -141,8 +179,8 @@ def extract_images(
                     ext = _infer_image_ext(base_image)
 
                 if output_mode == "files":
-                    output_path = Path(output_dir) / f"img_{img_index:04d}.{ext}"
-                    output_path.write_bytes(image_bytes)
+                    output_file = output_path / f"img_{img_index:04d}.{ext}"
+                    output_file.write_bytes(image_bytes)
                     images.append(
                         ExtractedImage(
                             page=p,
@@ -150,7 +188,8 @@ def extract_images(
                             width=width,
                             height=height,
                             ext=ext,
-                            path=str(output_path),
+                            path=str(output_file),
+                            source="extracted",
                         )
                     )
                 else:  # base64
@@ -163,6 +202,7 @@ def extract_images(
                             height=height,
                             ext=ext,
                             base64_data=b64,
+                            source="extracted",
                         )
                     )
 

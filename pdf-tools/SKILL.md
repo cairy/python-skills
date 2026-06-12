@@ -29,6 +29,7 @@ compatibility:
 - 纯文本提取（含多页合并）
 - 结构化文本块提取（含 top-left 坐标和尺寸）
 - 嵌入位图图片提取（保存为文件或 base64 编码）
+- 嵌入图片提取失败时按策略 fallback 渲染整页为图片
 - 页面渲染为图片（将 PDF 页面光栅化为 png/jpeg）
 - 加密 PDF（需提供密码，CLI 暂不支持密码参数）
 
@@ -120,3 +121,23 @@ with open_pdf("document.pdf") as doc:
     text = extract_text_plain(doc)
     print(text)
 ```
+
+### 图片提取 + fallback 渲染
+
+```python
+from pdf_tools import open_pdf, extract_images, too_many_small_elements
+
+with open_pdf("document.pdf") as doc:
+    images = extract_images(
+        doc,
+        output_dir="./imgs",
+        fallback=too_many_small_elements(max_size_ratio=0.5, min_count=2),
+        fallback_dpi=300,
+        fallback_fmt="png",
+    )
+
+for img in images:
+    print(f"page {img.page}: {img.source} -> {img.path}")
+```
+
+`fallback` 为 `Callable[[fitz.Page], bool]`，返回 True 时将该页渲染为图片而非提取嵌入图片；`fallback_dpi` 和 `fallback_fmt` 控制渲染质量。
