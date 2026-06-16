@@ -5,10 +5,11 @@ description: >
   支持 PostgreSQL、MySQL、SQL Server、Oracle、SQLite。
   不提供数据导入导出、数据库迁移、ORM 操作或连接池高级调优。
   可在 macOS 上自动处理低版本 SQL Server 的 OpenSSL TLS 1.0 兼容问题。
-version: 0.1.0
-tags: ["python", "数据库", "SQL", "SQLAlchemy"]
 compatibility:
   python: ">=3.10"
+metadata:
+  version: "0.1.0"
+  tags: ["python", "数据库", "SQL", "SQLAlchemy"]
 ---
 
 # 技能概述
