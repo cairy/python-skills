@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "db-tools"
+version = "0.1.0"
+authors = [{ name = "python-skills" }]
+description = "当用户需要连接多种关系型数据库、执行 SQL 或探查元数据时使用本技能；不提供数据导入导出、迁移管理或 ORM 功能。"
+requires-python = ">=3.10"
+dependencies = [
+    "sqlalchemy>=2.0",
+    "pyodbc>=4.0; platform_system!='Linux'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["db_tools*"]
+
+[tool.setuptools.package-data]
+db_tools = ["resources/*"]
+
+[project.urls]
+"Homepage" = "https://github.com/cairy/python-skills/tree/main/db-tools"
