@@ -107,11 +107,34 @@ def cmd_query(args: argparse.Namespace) -> int:
                 limit=args.limit,
                 read_only=read_only,
             )
+        if args.format == "table":
+            result["rows"] = _format_table(result["columns"], result["rows"])
         _output_success(result)
         return 0
     except Exception as exc:
         _output_error("Query failed", exc)
         return 1
+
+
+def _format_table(columns: List[Dict[str, str]], rows: List[List[Any]]) -> str:
+    """Format query results as a simple text table."""
+    if not columns:
+        return ""
+    headers = [c["name"] for c in columns]
+    widths = [len(h) for h in headers]
+    rendered_rows: List[List[str]] = []
+    for row in rows:
+        rendered = [str(v) if v is not None else "NULL" for v in row]
+        rendered_rows.append(rendered)
+        widths = [max(widths[i], len(rendered[i])) for i in range(len(headers))]
+
+    lines = [
+        " | ".join(h.ljust(widths[i]) for i, h in enumerate(headers)),
+        "-+-".join("-" * widths[i] for i in range(len(headers))),
+    ]
+    for rendered in rendered_rows:
+        lines.append(" | ".join(rendered[i].ljust(widths[i]) for i in range(len(headers))))
+    return "\n".join(lines)
 
 
 def cmd_tables(args: argparse.Namespace) -> int:

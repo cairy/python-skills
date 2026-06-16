@@ -46,6 +46,27 @@ def test_cli_query_with_allow_write():
     assert result.returncode == 0
 
 
+def test_cli_query_with_params():
+    result = run_cli([
+        "--driver", "sqlite", "--database", ":memory:",
+        "query", "SELECT :x AS x", "--params", '{"x": 42}',
+    ])
+    assert result.returncode == 0
+    data = json.loads(result.stdout)
+    assert data["data"]["rows"][0] == [42]
+
+
+def test_cli_query_table_format():
+    result = run_cli([
+        "--driver", "sqlite", "--database", ":memory:",
+        "query", "SELECT 1 AS id, 'alice' AS name", "--format", "table",
+    ])
+    assert result.returncode == 0
+    data = json.loads(result.stdout)
+    assert "id" in data["data"]["rows"]
+    assert "alice" in data["data"]["rows"]
+
+
 def test_cli_tables_and_columns(tmp_path):
     db_path = tmp_path / "test.db"
     result = run_cli([
