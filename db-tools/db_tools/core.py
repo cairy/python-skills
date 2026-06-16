@@ -6,7 +6,14 @@ from typing import Dict, Optional
 
 @dataclass
 class ConnectionConfig:
-    """Database connection configuration."""
+    """Database connection configuration.
+
+    Oracle-specific fields (``oracle_*``) are exposed explicitly because
+    ``oracledb.init_oracle_client()`` must be called before creating the
+    SQLAlchemy engine. Other driver-specific options (e.g. PostgreSQL
+    ``sslmode``, SQL Server ``driver`` override) should be passed via
+    ``query`` so they flow directly into the SQLAlchemy URL.
+    """
 
     driver: str
     host: Optional[str] = None

@@ -51,10 +51,10 @@ PYTHONPATH=. python scripts/main.py --help
 # 测试连接
 python scripts/main.py --driver sqlite --database :memory: test
 
-# 执行查询（默认只读）
+# 执行查询（默认只读；:memory: 仅在单次调用内有效）
 python scripts/main.py --driver sqlite --database :memory: query "SELECT 1"
 
-# 执行写操作
+# 执行写操作（:memory: 表在命令结束后即丢弃）
 python scripts/main.py --driver sqlite --database :memory: \
   query "CREATE TABLE t (id INTEGER)" --allow-write
 
@@ -67,12 +67,19 @@ python scripts/main.py --driver postgresql --host localhost --database mydb \
   --username user --password pass columns users --schema public
 ```
 
+> 安全提示：命令行 `--password` 会暴露在进程列表中。生产环境优先使用 `--env-file` 或 `DB_PASSWORD` 等环境变量传递凭据。
+
 ## Python API
 
 ```python
 from db_tools import build_config, create_engine_from_config, execute_query
 
-config = build_config(driver="postgresql", host="localhost", database="mydb")
+config = build_config(
+    driver="postgresql",
+    host="localhost",
+    database="mydb",
+    query={"sslmode": "require"},
+)
 engine = create_engine_from_config(config)
 
 with engine.connect() as conn:

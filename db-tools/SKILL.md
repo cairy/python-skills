@@ -59,18 +59,20 @@ metadata:
 # 测试连接
 python scripts/main.py --driver sqlite --database :memory: test
 
-# 执行查询
+# 执行查询（:memory: 仅在单次调用内有效）
 python scripts/main.py --driver sqlite --database :memory: \
   query "SELECT * FROM users" --limit 10
 
 # 列出表
-python scripts/main.py --driver postgresql --host localhost --database mydb \
-  --username user --password pass tables
+python scripts/main.py --driver sqlite --database /tmp/mydb.db \
+  tables
 
 # 查看列
 python scripts/main.py --driver postgresql --host localhost --database mydb \
   --username user --password pass columns users --schema public
 ```
+
+> 安全提示：命令行 `--password` 会暴露在进程列表中。生产环境优先使用 `--env-file` 或 `DB_PASSWORD` 等环境变量传递凭据。
 
 ## AI 调用约束
 
@@ -78,6 +80,7 @@ python scripts/main.py --driver postgresql --host localhost --database mydb \
 2. 严格遵循 `--help` 提示的参数格式
 3. 成功时仅解析 **stdout** 的 JSON；失败时从 **stderr** 读取错误
 4. DML/DDL 必须传入 `--allow-write`
+5. SQLite `:memory:` 仅在单次调用内有效，跨命令不共享数据；需要持久化请使用文件路径
 
 # 评测信息
 
@@ -97,7 +100,10 @@ pip install -e .
 from db_tools import build_config, create_engine_from_config, execute_query
 from sqlalchemy import text
 
-config = build_config(driver="sqlite", database=":memory:")
+config = build_config(
+    driver="sqlite",
+    database=":memory:",
+)
 engine = create_engine_from_config(config)
 
 with engine.connect() as conn:
@@ -106,3 +112,5 @@ with engine.connect() as conn:
     result = execute_query(conn, "SELECT * FROM users")
     print(result)
 ```
+
+Oracle 的 Thick 模式通过 ``ConnectionConfig`` 的 ``oracle_*`` 字段配置；其他驱动的专属参数（如 PostgreSQL ``sslmode``、SQL Server ``driver`` 覆盖）通过 ``query`` 字典传入，直接写入 SQLAlchemy URL。

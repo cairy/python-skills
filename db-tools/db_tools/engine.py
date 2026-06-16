@@ -62,27 +62,21 @@ def _configure_sqlserver(config: ConnectionConfig, query: Dict[str, str], kwargs
 
     driver = query.get("driver") or find_sqlserver_driver()
 
-    if os.name == "nt" and not driver:
+    if not driver:
         raise DriverNotFoundError("No SQL Server ODBC driver found.")
 
-    if driver:
-        query["driver"] = driver
-        kwargs.setdefault("fast_executemany", True)
+    query["driver"] = driver
+    kwargs.setdefault("fast_executemany", True)
 
-        if os.name != "nt" and driver.startswith("ODBC Driver"):
-            try:
-                version = int(driver.split()[2])
-            except (IndexError, ValueError):
-                version = 0
-            if version >= 18:
-                connect_args = kwargs.setdefault("connect_args", {})
-                connect_args.setdefault("Encrypt", "no")
-                connect_args.setdefault("TrustServerCertificate", "yes")
-    else:
-        # posix fallback
-        query["driver"] = "/usr/local/lib/libtdsodbc.so"
-        if config.port is None:
-            query.setdefault("port", "1433")
+    if os.name != "nt" and driver.startswith("ODBC Driver"):
+        try:
+            version = int(driver.split()[2])
+        except (IndexError, ValueError):
+            version = 0
+        if version >= 18:
+            connect_args = kwargs.setdefault("connect_args", {})
+            connect_args.setdefault("Encrypt", "no")
+            connect_args.setdefault("TrustServerCertificate", "yes")
 
 
 def _configure_oracle(config: ConnectionConfig, kwargs: Dict[str, Any]) -> None:

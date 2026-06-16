@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy
 
-from db_tools.core import ConnectionConfig
+from db_tools.core import ConnectionConfig, DriverNotFoundError
 from db_tools.engine import create_engine_from_config
 
 
@@ -36,6 +36,14 @@ def test_sqlserver_odbc_driver_injected():
     with patch("db_tools.engine.find_sqlserver_driver", return_value="ODBC Driver 18 for SQL Server"):
         engine = create_engine_from_config(cfg)
     assert engine.url.query.get("driver") == "ODBC Driver 18 for SQL Server"
+
+
+def test_sqlserver_missing_driver_raises_on_posix():
+    cfg = ConnectionConfig(driver="mssql+pyodbc", host="localhost", database="db")
+    with patch("db_tools.engine.find_sqlserver_driver", return_value=""):
+        with patch("db_tools.engine.os.name", "posix"):
+            with pytest.raises(DriverNotFoundError, match="No SQL Server ODBC driver found"):
+                create_engine_from_config(cfg)
 
 
 def test_oracle_client_init():

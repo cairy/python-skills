@@ -8,8 +8,33 @@
     },
     {
       "id": 2,
-      "prompt": "使用 db-tools 在 SQLite :memory: 中创建表 users(id INTEGER)，然后列出所有表名",
+      "prompt": "使用 db-tools 在临时 SQLite 数据库文件 /tmp/eval_users.db 中创建表 users(id INTEGER)，然后列出该数据库的所有表名",
       "expected_output": "stdout 输出 JSON，success 为 true，data 包含 'users'"
+    },
+    {
+      "id": 3,
+      "prompt": "使用 db-tools 在 SQLite :memory: 中执行 INSERT INTO t (id) VALUES (1)，不带 --allow-write",
+      "expected_output": "returncode 为 1，stderr 包含 ReadOnlyError"
+    },
+    {
+      "id": 4,
+      "prompt": "使用 db-tools 在 SQLite :memory: 中执行 CREATE TABLE t (id INTEGER) 并传入 --allow-write",
+      "expected_output": "stdout 输出 JSON，success 为 true"
+    },
+    {
+      "id": 5,
+      "prompt": "使用 db-tools 连接 SQLite :memory: 并执行 SELECT 1 AS id, 'alice' AS name，要求 --format table",
+      "expected_output": "stdout 输出 JSON，success 为 true，data.rows 为可读的文本表格字符串，包含 id 和 alice"
+    },
+    {
+      "id": 6,
+      "prompt": "使用 db-tools 在临时 SQLite 数据库文件 /tmp/eval_columns.db 中创建表 users(id INTEGER PRIMARY KEY, name TEXT)，然后查询 users 表的列信息",
+      "expected_output": "stdout 输出 JSON，success 为 true，data 中包含 name 为 id 和 name 的列元数据"
+    },
+    {
+      "id": 7,
+      "prompt": "使用 db-tools 通过 --url sqlite:///:memory: 执行 SELECT 42 AS answer",
+      "expected_output": "stdout 输出 JSON，success 为 true，data.rows 包含 [42]"
     }
   ]
 }

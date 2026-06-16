@@ -40,6 +40,22 @@ def test_build_config_from_url():
     assert cfg.password == "pass"
 
 
+def test_build_config_with_query_options():
+    cfg = build_config(
+        driver="postgresql",
+        host="localhost",
+        database="mydb",
+        query={"sslmode": "require", "connect_timeout": "10"},
+    )
+    assert cfg.query["sslmode"] == "require"
+    assert cfg.query["connect_timeout"] == "10"
+
+
+def test_build_config_from_url_preserves_query():
+    cfg = build_config_from_url("postgresql://user:pass@localhost:5432/mydb?sslmode=require")
+    assert cfg.query["sslmode"] == "require"
+
+
 def test_build_config_from_env_vars(monkeypatch):
     monkeypatch.setenv("DB_DRIVER", "mysql+mysqldb")
     monkeypatch.setenv("DB_HOST", "127.0.0.1")
