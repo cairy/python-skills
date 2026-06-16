@@ -1,0 +1,15 @@
+{
+  "skill_name": "db-tools",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "使用 db-tools 连接 SQLite :memory: 并执行 SELECT 1+1",
+      "expected_output": "stdout 输出 JSON，success 为 true"
+    },
+    {
+      "id": 2,
+      "prompt": "使用 db-tools 在 SQLite :memory: 中创建表并列出表名",
+      "expected_output": "stdout 输出 JSON，data 包含创建的表名"
+    }
+  ]
+}
