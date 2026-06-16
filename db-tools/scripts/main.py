@@ -12,10 +12,16 @@ import argparse
 import json
 import sys
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
+
+# Allow the script to find db_tools when run directly without installing the package.
+_SCRIPT_DIR = Path(__file__).resolve().parent
+if str(_SCRIPT_DIR.parent) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
 from db_tools.config import build_config, build_config_from_url, load_env_file
 from db_tools.core import ConnectionConfig, ReadOnlyError

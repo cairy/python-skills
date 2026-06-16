@@ -3,13 +3,13 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "使用 db-tools 连接 SQLite :memory: 并执行 SELECT 1+1",
-      "expected_output": "stdout 输出 JSON，success 为 true"
+      "prompt": "使用 db-tools 连接 SQLite :memory: 数据库并执行 SELECT 1+1，验证返回结果为 2",
+      "expected_output": "stdout 输出 JSON，success 为 true，data.rows 包含 [2]"
     },
     {
       "id": 2,
-      "prompt": "使用 db-tools 在 SQLite :memory: 中创建表并列出表名",
-      "expected_output": "stdout 输出 JSON，data 包含创建的表名"
+      "prompt": "使用 db-tools 在 SQLite :memory: 中创建表 users(id INTEGER)，然后列出所有表名",
+      "expected_output": "stdout 输出 JSON，success 为 true，data 包含 'users'"
     }
   ]
 }
