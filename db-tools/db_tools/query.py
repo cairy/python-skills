@@ -84,9 +84,21 @@ def _describe_columns(result: CursorResult[Any]) -> List[Dict[str, str]]:
     Returns:
         List of dicts with ``name`` and ``type`` keys.
     """
-    columns = []
-    for key in result.keys():
-        columns.append({"name": key, "type": "UNKNOWN"})
+    keys = result.keys()
+    if not keys:
+        return []
+
+    description = result.cursor.description if result.cursor else None
+    columns: List[Dict[str, str]] = []
+    for i, key in enumerate(keys):
+        type_name = "UNKNOWN"
+        if description and len(description) > i:
+            type_obj = description[i][1]
+            if hasattr(type_obj, "__name__"):
+                type_name = type_obj.__name__
+            else:
+                type_name = str(type_obj)
+        columns.append({"name": key, "type": type_name})
     return columns
 
 
@@ -167,7 +179,13 @@ def execute_query(
 
     if not is_read_only_sql(sql):
         conn.commit()
-        return {"affected_rows": result.rowcount}
+        return {
+            "columns": [],
+            "rows": [],
+            "row_count": 0,
+            "truncated": False,
+            "affected_rows": result.rowcount,
+        }
 
     columns = _describe_columns(result)
     rows, row_count, truncated = _fetch_rows(result, limit)
