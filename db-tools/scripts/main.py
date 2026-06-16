@@ -14,11 +14,11 @@ import sys
 import time
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from db_tools.config import build_config, build_config_from_url, load_env_file
-from db_tools.core import ConnectionConfig, DbToolsError, ReadOnlyError
+from db_tools.core import ConnectionConfig, ReadOnlyError
 from db_tools.engine import create_engine_from_config
 from db_tools.metadata import get_columns, get_inspector, list_tables
 from db_tools.query import execute_query, is_read_only_sql
@@ -118,8 +118,8 @@ def cmd_tables(args: argparse.Namespace) -> int:
     """List tables in the database."""
     try:
         engine = _create_engine_from_args(args)
-        with engine.connect() as conn:
-            tables = list_tables(conn, schema=args.schema)
+        inspector = get_inspector(engine)
+        tables = list_tables(inspector, schema=args.schema)
         _output_success(tables)
         return 0
     except Exception as exc:
@@ -131,13 +131,13 @@ def cmd_columns(args: argparse.Namespace) -> int:
     """List columns for a given table."""
     try:
         engine = _create_engine_from_args(args)
-        with engine.connect() as conn:
-            columns = get_columns(
-                conn,
-                table_name=args.table,
-                schema=args.schema,
-                generic_types=args.generic_types,
-            )
+        inspector = get_inspector(engine)
+        columns = get_columns(
+            inspector,
+            table_name=args.table,
+            schema=args.schema,
+            generic_types=args.generic_types,
+        )
         _output_success(columns)
         return 0
     except Exception as exc:
