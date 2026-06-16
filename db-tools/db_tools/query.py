@@ -2,9 +2,8 @@
 
 import decimal
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
-import sqlalchemy
 from sqlalchemy import text
 from sqlalchemy.engine import Connection
 from sqlalchemy.engine.cursor import CursorResult
@@ -41,7 +40,7 @@ def execute_raw(
     Returns:
         The SQLAlchemy ``CursorResult``.
     """
-    stmt = sqlalchemy.text(sql)
+    stmt = text(sql)
     if params:
         stmt = stmt.bindparams(**params)
     return conn.execute(stmt)
@@ -166,18 +165,25 @@ def execute_query(
     Returns:
         For SELECT queries: ``{"columns": [...], "rows": [...], "row_count": int,
         "truncated": bool, "affected_rows": None}``.
-        For other queries: ``{"affected_rows": int}``.
+        For other queries: ``{"columns": [], "rows": [], "row_count": 0,
+        "truncated": False, "affected_rows": int}``.
 
     Raises:
         ReadOnlyError: If ``read_only`` is ``True`` and the SQL is not a read-only SELECT.
+
+    Note:
+        The read-only check is a heuristic based on the statement prefix. It is
+        intended to prevent accidental writes, not to provide a security boundary
+        against malicious input.
     """
-    if read_only and not is_read_only_sql(sql):
+    select_statement = is_read_only_sql(sql)
+    if read_only and not select_statement:
         raise ReadOnlyError("Write operation blocked in read-only mode.")
 
     prepared_params = _prepare_params(params)
     result = execute_raw(conn, sql, prepared_params)
 
-    if not is_read_only_sql(sql):
+    if not select_statement:
         conn.commit()
         return {
             "columns": [],

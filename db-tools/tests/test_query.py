@@ -66,8 +66,31 @@ def test_read_only_blocks_write():
     with engine.connect() as conn:
         conn.execute(sqlalchemy.text("CREATE TABLE users (id INTEGER PRIMARY KEY)"))
         conn.commit()
-        with pytest.raises(ReadOnlyError):
-            execute_query(conn, "INSERT INTO users (id) VALUES (1)", read_only=True)
+        for statement in [
+            "INSERT INTO users (id) VALUES (1)",
+            "UPDATE users SET id = 2",
+            "DELETE FROM users",
+            "DROP TABLE users",
+        ]:
+            with pytest.raises(ReadOnlyError):
+                execute_query(conn, statement, read_only=True)
+
+
+def test_execute_query_limit_zero(sqlite_conn):
+    result = execute_query(sqlite_conn, "SELECT * FROM users ORDER BY id", limit=0)
+    assert result["row_count"] == 0
+    assert result["rows"] == []
+    assert result["truncated"] is True
+
+
+def test_execute_query_affected_rows_none(sqlite_conn):
+    result = execute_query(sqlite_conn, "SELECT * FROM users ORDER BY id")
+    assert result["affected_rows"] is None
+
+
+def test_serialize_bytes(sqlite_conn):
+    result = execute_query(sqlite_conn, "SELECT CAST('hello' AS BLOB) AS data")
+    assert result["rows"][0] == ["hello"]
 
 
 def test_serialize_special_types(sqlite_conn):
