@@ -3,7 +3,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 from db_tools.core import ConnectionConfig, ConfigurationError
 
@@ -61,7 +61,7 @@ def build_config(
     database: Optional[str] = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
-    query: Optional[dict] = None,
+    query: Optional[Dict[str, str]] = None,
     app_name: Optional[str] = None,
 ) -> ConnectionConfig:
     """Build a ConnectionConfig from explicit parameters and environment variables.
@@ -176,10 +176,7 @@ def apply_macos_sqlserver_openssl_workaround(config: ConnectionConfig) -> bool:
         return False
 
     conf_path = _bundled_openssl_conf_path()
-    if conf_path is None:
-        return False
-    conf_path = Path(conf_path) if not isinstance(conf_path, Path) else conf_path
-    if not conf_path.exists():
+    if conf_path is None or not conf_path.exists():
         return False
 
     os.environ["OPENSSL_CONF"] = str(conf_path)
