@@ -41,3 +41,7 @@ def test_get_columns(sqlite_engine):
 def test_get_columns_generic_types(sqlite_engine):
     columns = get_columns(sqlite_engine, "users", generic_types=True)
     assert all("type" in c for c in columns)
+    id_col = next(c for c in columns if c["name"] == "id")
+    name_col = next(c for c in columns if c["name"] == "name")
+    assert id_col["type"] == "INTEGER"
+    assert name_col["type"] == "TEXT"
