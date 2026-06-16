@@ -93,9 +93,13 @@ def _configure_oracle(config: ConnectionConfig, kwargs: Dict[str, Any]) -> None:
         kwargs: Mutable keyword arguments for ``create_engine``.
     """
     if config.oracle_client_enabled and oracledb is not None:
-        oracledb.init_oracle_client(config.oracle_client_path)
+        if config.oracle_tns_enabled and config.oracle_tns_path:
+            oracledb.init_oracle_client(
+                config.oracle_client_path, config_dir=config.oracle_tns_path
+            )
+        else:
+            oracledb.init_oracle_client(config.oracle_client_path)
 
-    if config.oracle_tns_enabled and oracledb is not None:
-        if not config.oracle_client_enabled:
-            connect_args = kwargs.setdefault("connect_args", {})
-            connect_args.setdefault("config_dir", config.oracle_tns_path)
+    if config.oracle_tns_enabled and config.oracle_tns_path and not config.oracle_client_enabled:
+        connect_args = kwargs.setdefault("connect_args", {})
+        connect_args.setdefault("config_dir", config.oracle_tns_path)
