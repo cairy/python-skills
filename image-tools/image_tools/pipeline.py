@@ -126,9 +126,10 @@ def step_compress(
     image: Image.Image,
     quality: int = 85,
     keep_exif: bool = False,
+    fmt: str = "jpg",
 ) -> tuple[Image.Image, dict[str, Any]]:
-    """同格式重新编码压缩。"""
-    return step_convert(image, fmt="jpg", quality=quality, keep_exif=keep_exif)
+    """重新编码压缩；输出格式由 fmt 参数决定（默认 jpg）。"""
+    return step_convert(image, fmt=fmt, quality=quality, keep_exif=keep_exif)
 
 
 def _save_image(
@@ -190,23 +191,25 @@ def process_image(
                 image, fmt=format, quality=quality, keep_exif=keep_exif
             )
         elif step == "compress":
-            image, save_kwargs = step_compress(image, quality=quality, keep_exif=keep_exif)
+            image, save_kwargs = step_compress(image, quality=quality, keep_exif=keep_exif, fmt=format)
         elif step == "annotate":
             image = draw_boxes(image, boxes or [])
         else:
             raise ValueError(f"不支持的原子操作：{step}")
 
-    if not save_kwargs and "annotate" not in pipeline:
+    if not save_kwargs:
         # If no convert/compress step, default to saving as-is in requested format
         image, save_kwargs = step_convert(
             image, fmt=format, quality=quality, keep_exif=keep_exif
         )
 
+    output_path_obj = Path(output_path)
+    if output_path_obj.exists() and output_path_obj.is_dir():
+        raise ValueError(f"输出路径是目录：{output_path_obj}")
+
     _save_image(image, output_path, format, save_kwargs)
 
-    output_path_obj = Path(output_path)
-    with Image.open(output_path_obj) as img:
-        out_w, out_h = img.size
+    out_w, out_h = image.size
 
     return ProcessResult(
         input_path=str(input_path),
