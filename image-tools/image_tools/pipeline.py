@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,9 @@ from image_tools.core import (
     validate_input_path,
     validate_output_dir,
 )
+
+
+SUPPORTED_EXTENSIONS: set[str] = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".gif"}
 
 
 def _open_image(path: str | Path) -> Image.Image:
@@ -221,9 +225,6 @@ def process_image(
     )
 
 
-import json
-
-
 def process_directory(
     input_dir: str | Path,
     output_dir: str | Path,
@@ -252,22 +253,26 @@ def process_directory(
         boxes: 文件名到标注框列表的映射（annotate 操作使用）。
         resize_mode: 缩放模式。
         log_path: 日志文件路径（默认 output_dir/image-tools-batch.json）。
-        name_map: 原文件名到新文件名的映射（可选）。
+        name_map: 原文件相对路径到新输出文件 stem（不含扩展名）的映射（可选）。
+            例如 {"subdir/file.jpg": "renamed"} 会将 subdir/file.jpg 输出为 subdir/renamed.png。
 
     Returns:
         BatchResult: 批量处理统计结果。
     """
     input_dir = Path(input_dir)
+    if not input_dir.exists():
+        raise FileNotFoundError(f"输入目录不存在：{input_dir}")
+    if not input_dir.is_dir():
+        raise ValueError(f"输入路径不是目录：{input_dir}")
     output_dir = validate_output_dir(output_dir)
 
     if log_path is None:
         log_path = output_dir / "image-tools-batch.json"
     log_path = Path(log_path)
 
-    supported_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".gif"}
     image_files = sorted(
         p for p in input_dir.rglob("*")
-        if p.is_file() and p.suffix.lower() in supported_exts
+        if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
     )
 
     results: list[dict[str, Any]] = []

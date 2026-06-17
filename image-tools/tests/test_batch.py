@@ -12,11 +12,14 @@ from image_tools.core import BatchResult, Box
 from image_tools.pipeline import process_directory
 
 
+SAMPLE_PATH = Path(__file__).resolve().parents[1] / "evals" / "files" / "sample_400x300.jpg"
+
+
 def test_process_directory(tmp_path):
     # Create input structure
     input_dir = tmp_path / "in"
     input_dir.mkdir()
-    sample = Path("evals/files/sample_400x300.jpg").read_bytes()
+    sample = SAMPLE_PATH.read_bytes()
     (input_dir / "a.jpg").write_bytes(sample)
 
     output_dir = tmp_path / "out"
@@ -47,7 +50,7 @@ def test_process_directory(tmp_path):
 def test_process_directory_failure_continues(tmp_path):
     input_dir = tmp_path / "in"
     input_dir.mkdir()
-    sample = Path("evals/files/sample_400x300.jpg").read_bytes()
+    sample = SAMPLE_PATH.read_bytes()
     (input_dir / "good.jpg").write_bytes(sample)
     (input_dir / "bad.jpg").write_bytes(b"not an image")
 
@@ -76,12 +79,13 @@ def test_process_directory_failure_continues(tmp_path):
     assert "bad.jpg" in bad_entry["input"]
     assert "error" in bad_entry
     assert "error_type" in bad_entry
+    assert bad_entry["error_type"] in {"UnidentifiedImageError", "OSError"}
 
 
 def test_process_directory_preserves_structure(tmp_path):
     input_dir = tmp_path / "in"
     (input_dir / "subdir").mkdir(parents=True)
-    sample = Path("evals/files/sample_400x300.jpg").read_bytes()
+    sample = SAMPLE_PATH.read_bytes()
     (input_dir / "top.jpg").write_bytes(sample)
     (input_dir / "subdir" / "nested.jpg").write_bytes(sample)
 
@@ -110,7 +114,7 @@ def test_process_directory_preserves_structure(tmp_path):
 def test_process_directory_with_boxes_and_name_map(tmp_path):
     input_dir = tmp_path / "in"
     input_dir.mkdir()
-    sample = Path("evals/files/sample_400x300.jpg").read_bytes()
+    sample = SAMPLE_PATH.read_bytes()
     (input_dir / "a.jpg").write_bytes(sample)
 
     output_dir = tmp_path / "out"
@@ -130,3 +134,29 @@ def test_process_directory_with_boxes_and_name_map(tmp_path):
     with open(result.log_path, encoding="utf-8") as f:
         log = json.load(f)
     assert log["results"][0]["output"] == str(output_dir / "renamed.png")
+
+
+def test_process_directory_name_map_nested(tmp_path):
+    input_dir = tmp_path / "in"
+    (input_dir / "subdir").mkdir(parents=True)
+    sample = SAMPLE_PATH.read_bytes()
+    (input_dir / "subdir" / "nested.jpg").write_bytes(sample)
+
+    output_dir = tmp_path / "out"
+
+    result = process_directory(
+        input_dir=input_dir,
+        output_dir=output_dir,
+        pipeline=["convert"],
+        format="png",
+        name_map={"subdir/nested.jpg": "renamed"},
+    )
+
+    assert result.success_count == 1
+    assert result.failure_count == 0
+    assert (output_dir / "subdir" / "renamed.png").exists()
+
+    with open(result.log_path, encoding="utf-8") as f:
+        log = json.load(f)
+    assert len(log["results"]) == 1
+    assert log["results"][0]["output"] == str(output_dir / "subdir" / "renamed.png")
