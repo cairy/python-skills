@@ -36,7 +36,7 @@ class Box:
     width: int
     height: int
     name: str = ""
-    color: str = "red"
+    color: str = ""
 
 
 @dataclass

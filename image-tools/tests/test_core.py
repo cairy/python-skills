@@ -18,7 +18,7 @@ from image_tools.core import (
 def test_box_defaults():
     box = Box(x=10, y=20, width=100, height=80)
     assert box.name == ""
-    assert box.color == "red"
+    assert box.color == ""
 
 
 def test_process_result_fields():

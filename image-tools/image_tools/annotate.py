@@ -27,7 +27,7 @@ def draw_boxes(image: Image.Image, boxes: list[Box]) -> Image.Image:
     out = image.copy()
     draw = ImageDraw.Draw(out)
     for box in boxes:
-        color = box.color or DEFAULT_COLORS.get(box.name, "yellow")
+        color = box.color if box.color else DEFAULT_COLORS.get(box.name, "yellow")
         draw.rectangle(
             [
                 box.x,
