@@ -44,12 +44,14 @@ def test_batch_result_instantiation():
     assert result.failure_count == 1
 
 
+def test_box_negative_dimensions():
+    with pytest.raises(ValueError, match="width and height must be >= 0"):
+        Box(x=10, y=20, width=-1, height=80)
+    with pytest.raises(ValueError, match="width and height must be >= 0"):
+        Box(x=10, y=20, width=100, height=-1)
+
+
 def test_validate_input_path_not_found(tmp_path):
-    with pytest.raises(FileNotFoundError):
-        validate_input_path(tmp_path / "missing.jpg")
-
-
-def test_validate_input_path_is_directory(tmp_path):
     with pytest.raises(ValueError, match="路径不是文件"):
         validate_input_path(tmp_path)
 

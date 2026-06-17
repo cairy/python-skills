@@ -38,6 +38,9 @@ class Box:
     name: str = ""
     color: str = ""
 
+    def __post_init__(self) -> None:
+        if self.width < 0 or self.height < 0:
+            raise ValueError("width and height must be >= 0")
 
 @dataclass
 class ProcessResult:

@@ -18,8 +18,16 @@ def test_draw_boxes_returns_copy():
 def test_draw_boxes_default_color():
     img = Image.new("RGB", (100, 100), "white")
     result = draw_boxes(img, [Box(10, 10, 20, 20)])
-    # Check that at least one pixel inside the box border changed
-    assert result.getpixel((10, 10)) != (255, 255, 255)
+    assert result.getpixel((10, 10)) == (255, 255, 0)  # yellow
+
+
+def test_draw_boxes_empty_list():
+    img = Image.new("RGB", (100, 100), "white")
+    result = draw_boxes(img, [])
+    assert result is not img
+    assert result.getpixel((0, 0)) == (255, 255, 255)
+    assert result.getpixel((50, 50)) == (255, 255, 255)
+    assert result.getpixel((99, 99)) == (255, 255, 255)
 
 
 def test_draw_boxes_uses_name_color_mapping():
