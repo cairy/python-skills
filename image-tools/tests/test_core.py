@@ -9,7 +9,6 @@ from image_tools.core import (
     BatchResult,
     Box,
     ProcessResult,
-    resolve_output_path,
     validate_input_path,
     validate_output_dir,
 )
@@ -33,9 +32,25 @@ def test_process_result_fields():
     assert result.size_bytes == 1234
 
 
+def test_batch_result_instantiation():
+    result = BatchResult(
+        success_count=5,
+        failure_count=1,
+        output_dir="/tmp/out",
+        log_path="/tmp/out/log.json",
+    )
+    assert result.success_count == 5
+    assert result.failure_count == 1
+
+
 def test_validate_input_path_not_found(tmp_path):
     with pytest.raises(FileNotFoundError):
         validate_input_path(tmp_path / "missing.jpg")
+
+
+def test_validate_input_path_is_directory(tmp_path):
+    with pytest.raises(ValueError, match="路径不是文件"):
+        validate_input_path(tmp_path)
 
 
 def test_validate_output_dir_creates(tmp_path):
@@ -45,11 +60,8 @@ def test_validate_output_dir_creates(tmp_path):
     assert result.is_dir()
 
 
-def test_resolve_output_path_prefers_output():
-    out = resolve_output_path("in.png", "out.png", None, "jpg")
-    assert out == Path("out.png")
-
-
-def test_resolve_output_path_in_output_dir(tmp_path):
-    out = resolve_output_path("in.png", None, tmp_path, "jpg")
-    assert out == tmp_path / "in.jpg"
+def test_validate_output_dir_exists_but_not_dir(tmp_path):
+    file_path = tmp_path / "not_a_dir"
+    file_path.write_text("I am a file")
+    with pytest.raises(ValueError, match="输出路径已存在但不是目录"):
+        validate_output_dir(file_path)
