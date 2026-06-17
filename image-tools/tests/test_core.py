@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from pathlib import Path
+from unittest.mock import patch
 
 from image_tools.core import (
     BatchResult,
@@ -65,3 +66,19 @@ def test_validate_output_dir_exists_but_not_dir(tmp_path):
     file_path.write_text("I am a file")
     with pytest.raises(ValueError, match="输出路径已存在但不是目录"):
         validate_output_dir(file_path)
+
+
+def test_validate_input_path_no_read_permission(tmp_path):
+    f = tmp_path / "file.jpg"
+    f.write_text("x")
+    with patch("os.access", return_value=False):
+        with pytest.raises(PermissionError):
+            validate_input_path(f)
+
+
+def test_validate_output_dir_no_write_permission(tmp_path):
+    d = tmp_path / "output"
+    d.mkdir()
+    with patch("os.access", return_value=False):
+        with pytest.raises(PermissionError):
+            validate_output_dir(d)
