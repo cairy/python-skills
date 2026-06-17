@@ -7,7 +7,7 @@
 - **方向校正**：自动读取 EXIF Orientation 并转正图片
 - **等比缩放**：fit-without-pad 模式保持宽高比
 - **格式转换**：JPG / PNG / WebP
-- **压缩**：同格式重新编码，调整 JPEG/WebP quality
+- **JPEG 压缩**：同格式重新编码，调整 JPEG/WebP quality
 - **批量处理**：递归处理目录，失败自动跳过并记录日志
 - **画框标注**：在图片上绘制矩形框用于调试
 
@@ -23,6 +23,9 @@ pip install -e .
 # 标准化单张图片
 python3 scripts/main.py normalize input.png --width 1024 --height 1024 --output out.jpg
 
+# normalize 快捷命令：EXIF 校正 + 缩放 + 转 JPG
+python3 scripts/main.py normalize input.png -o out.jpg --width 1024 --height 1024
+
 # 自定义 pipeline
 python3 scripts/main.py process input.jpg --pipeline "compress" --quality 60 --output out.jpg
 
@@ -32,6 +35,12 @@ python3 scripts/main.py process \
   --output-dir ./processed \
   --pipeline "exif-transpose,resize,convert" \
   --width 1024 --height 1024 --format jpg
+
+# 画框标注
+python3 scripts/main.py process input.jpg \
+  --pipeline "annotate" \
+  --box "face,10,20,100,80,red" \
+  -o out.jpg
 ```
 
 ## Python API 调用
@@ -72,9 +81,9 @@ print(batch.success_count, batch.failure_count, batch.log_path)
 | 参数 | 类型 | 是否必填 | 默认值 | 说明 |
 |------|------|----------|--------|------|
 | `input` | str | 单文件必填 | - | 输入图片路径 |
-| `--output` / `-o` | str | 单文件必填 | - | 输出图片路径 |
+| `--output` / `-o` | str | 单文件运行时必填 | - | 输出图片路径 |
 | `--input-dir` | str | 批量必填 | - | 输入目录 |
-| `--output-dir` | str | 批量必填 | - | 输出目录 |
+| `--output-dir` / `-d` | str | 批量必填 | - | 输出目录 |
 | `--pipeline` | str | process 必填 | - | 逗号分隔原子操作 |
 | `--width` | int | resize 必填 | - | 目标宽度上限 |
 | `--height` | int | resize 必填 | - | 目标高度上限 |

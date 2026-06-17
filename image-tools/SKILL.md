@@ -16,7 +16,7 @@ compatibility:
 - **方向校正**：自动读取 EXIF Orientation 并转正图片
 - **等比缩放**：fit-without-pad 模式保持宽高比，指定目标尺寸上限
 - **格式转换**：支持 JPG、PNG、WebP 输出
-- **压缩**：同格式重新编码，调整 JPEG/WebP quality
+- **JPEG 压缩**：同格式重新编码，调整 JPEG/WebP quality
 - **批量处理**：递归处理目录，失败自动跳过并记录日志
 - **调试标注**：在图片上绘制矩形框
 
@@ -62,7 +62,7 @@ compatibility:
 python3 scripts/main.py --help
 
 # normalize 快捷命令：EXIF 校正 + 缩放 + 转 JPG
-python3 scripts/main.py normalize input.png --width 1024 --height 1024 --output out.jpg
+python3 scripts/main.py normalize input.png --width 1024 --height 1024 -o out.jpg
 
 # process 自定义 pipeline：仅压缩
 python3 scripts/main.py process input.jpg --pipeline "compress" --quality 60 --output out.jpg

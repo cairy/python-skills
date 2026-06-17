@@ -12,6 +12,24 @@
       "prompt": "使用 image-tools 批量处理 evals/files/ 目录，输出到 /tmp/processed/，pipeline 为 resize,convert，宽度 100，高度 100，格式 png",
       "expected_output": "stdout 输出 success: true 的 JSON，data 中 success_count 大于 0，output_dir 为 /tmp/processed/，且 /tmp/processed/ 下存在 png 文件",
       "files": ["evals/files/"]
+    },
+    {
+      "id": 3,
+      "prompt": "使用 image-tools 对 evals/files/sample_400x300.jpg 进行 JPEG 压缩，quality 设为 30，输出到 /tmp/compressed.jpg",
+      "expected_output": "stdout 输出 success: true 的 JSON，data 中包含 output_path=/tmp/compressed.jpg、format=jpg",
+      "files": ["evals/files/sample_400x300.jpg"]
+    },
+    {
+      "id": 4,
+      "prompt": "使用 image-tools 对 evals/files/sample_400x300.jpg 画框标注，box 为 face,10,20,50,50,red，输出到 /tmp/annotated.jpg",
+      "expected_output": "stdout 输出 success: true 的 JSON，data 中包含 output_path=/tmp/annotated.jpg",
+      "files": ["evals/files/sample_400x300.jpg"]
+    },
+    {
+      "id": 5,
+      "prompt": "使用 image-tools 处理一个不存在的文件 /tmp/nonexistent.jpg，输出到 /tmp/out.jpg",
+      "expected_output": "stderr 包含错误信息，stdout 为空或不含 success: true，返回非 0 退出码",
+      "files": []
     }
   ]
 }
