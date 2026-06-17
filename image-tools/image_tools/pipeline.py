@@ -219,3 +219,112 @@ def process_image(
         format=format.lower(),
         size_bytes=output_path_obj.stat().st_size,
     )
+
+
+import json
+
+
+def process_directory(
+    input_dir: str | Path,
+    output_dir: str | Path,
+    pipeline: list[str],
+    width: int | None = None,
+    height: int | None = None,
+    format: str = "jpg",
+    quality: int = 85,
+    keep_exif: bool = False,
+    boxes: dict[str, list[Box]] | None = None,
+    resize_mode: ResizeMode = "fit-without-pad",
+    log_path: str | Path | None = None,
+    name_map: dict[str, str] | None = None,
+) -> BatchResult:
+    """批量处理目录中的图片。
+
+    Args:
+        input_dir: 输入目录。
+        output_dir: 输出目录。
+        pipeline: 原子操作列表。
+        width: resize 目标宽度上限。
+        height: resize 目标高度上限。
+        format: 输出格式。
+        quality: JPEG/WebP 质量。
+        keep_exif: 是否保留 EXIF。
+        boxes: 文件名到标注框列表的映射（annotate 操作使用）。
+        resize_mode: 缩放模式。
+        log_path: 日志文件路径（默认 output_dir/image-tools-batch.json）。
+        name_map: 原文件名到新文件名的映射（可选）。
+
+    Returns:
+        BatchResult: 批量处理统计结果。
+    """
+    input_dir = Path(input_dir)
+    output_dir = validate_output_dir(output_dir)
+
+    if log_path is None:
+        log_path = output_dir / "image-tools-batch.json"
+    log_path = Path(log_path)
+
+    supported_exts = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".gif"}
+    image_files = sorted(
+        p for p in input_dir.rglob("*")
+        if p.is_file() and p.suffix.lower() in supported_exts
+    )
+
+    results: list[dict[str, Any]] = []
+    success_count = 0
+    failure_count = 0
+
+    for img_path in image_files:
+        rel_path = img_path.relative_to(input_dir)
+        rel_name = rel_path.as_posix()
+        output_name = (name_map or {}).get(rel_name, rel_path.stem)
+        out_rel = rel_path.parent / f"{output_name}.{format.lower()}"
+        out_path = output_dir / out_rel
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+
+        file_boxes = (boxes or {}).get(rel_name, [])
+        entry: dict[str, Any] = {
+            "input": str(img_path),
+            "output": str(out_path),
+        }
+        try:
+            process_image(
+                input_path=img_path,
+                output_path=out_path,
+                pipeline=pipeline,
+                width=width,
+                height=height,
+                format=format,
+                quality=quality,
+                keep_exif=keep_exif,
+                boxes=file_boxes,
+                resize_mode=resize_mode,
+            )
+            entry["success"] = True
+            success_count += 1
+        except Exception as e:
+            entry["success"] = False
+            entry["error"] = str(e)
+            entry["error_type"] = type(e).__name__
+            failure_count += 1
+        results.append(entry)
+
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "success_count": success_count,
+                "failure_count": failure_count,
+                "results": results,
+            },
+            f,
+            ensure_ascii=False,
+            indent=2,
+        )
+
+    return BatchResult(
+        success_count=success_count,
+        failure_count=failure_count,
+        output_dir=str(output_dir),
+        log_path=str(log_path),
+    )
