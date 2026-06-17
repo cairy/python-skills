@@ -1,0 +1,17 @@
+{
+  "skill_name": "image-tools",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "使用 image-tools 将 evals/files/sample_400x300.jpg 标准化为 200x200 范围内的 JPG，保存到 /tmp/out.jpg",
+      "expected_output": "stdout 输出 success: true 的 JSON，data 中包含 output_path、width=200、height=150、format=jpg",
+      "files": ["evals/files/sample_400x300.jpg"]
+    },
+    {
+      "id": 2,
+      "prompt": "使用 image-tools 批量处理 evals/files/ 目录，输出到 /tmp/processed/，pipeline 为 resize,convert，宽度 100，高度 100，格式 png",
+      "expected_output": "stdout 输出 success: true 的 JSON，data 中 success_count 大于 0，output_dir 为 /tmp/processed/，且 /tmp/processed/ 下存在 png 文件",
+      "files": ["evals/files/"]
+    }
+  ]
+}
