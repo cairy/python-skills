@@ -5,11 +5,11 @@
 # requires-python = ">=3.10"
 # ///
 
-"""image-tools CLI 入口 — AI 标准化调用脚本。
+"""image-tools CLI 入口。
 
 支持子命令：
   process    通过 --pipeline 组合原子操作处理图片
-  normalize  快捷命令：exif-transpose,resize,convert --format jpg
+  normalize  快捷命令：EXIF 校正 + 缩放 + 转 JPG
 
 成功时 stdout 输出 JSON：{"success": true, "data": ...}
 失败时 stderr 输出错误信息和错误 JSON。

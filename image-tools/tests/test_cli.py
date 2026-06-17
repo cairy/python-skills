@@ -53,6 +53,10 @@ def test_process_missing_input():
     assert result.returncode == 1
     assert result.stdout == ""
     assert "Error" in result.stderr
+    err_json = json.loads(result.stderr.strip().splitlines()[-1])
+    assert err_json["success"] is False
+    assert "error" in err_json
+    assert "error_type" in err_json
 
 
 def test_process_batch(tmp_path):
