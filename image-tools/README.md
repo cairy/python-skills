@@ -11,6 +11,26 @@
 - **批量处理**：递归处理目录，失败自动跳过并记录日志
 - **画框标注**：在图片上绘制矩形框用于调试
 
+## 项目结构
+
+```
+image-tools/
+├── scripts/main.py          # CLI 入口（process / normalize 子命令）
+├── image_tools/             # Python API 包
+│   ├── __init__.py          # 导出核心函数与类型
+│   ├── core.py              # 类型定义、校验、共享工具
+│   ├── pipeline.py          # 原子操作与 pipeline 编排
+│   └── annotate.py          # 画框标注
+├── tests/                   # 单元测试
+├── evals/                   # AI 评测用例与样本
+├── examples/                # 使用示例
+├── SKILL.md                 # Skill 说明（AI 调用约束）
+├── README.md                # 本文件
+└── pyproject.toml           # 包配置与依赖
+```
+
+`scripts/main.py` 仅负责参数解析和结果输出，所有业务逻辑下沉到 `image_tools/` 包中，便于同时作为命令行工具和 Python 库使用。
+
 ## 安装方式
 
 ```bash
