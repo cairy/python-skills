@@ -10,6 +10,7 @@ from image_tools.core import (
     validate_input_path,
     validate_output_dir,
 )
+from image_tools.pipeline import process_image
 
 __all__ = [
     "BatchResult",
@@ -18,6 +19,7 @@ __all__ = [
     "PipelineStep",
     "ProcessResult",
     "ResizeMode",
+    "process_image",
     "validate_input_path",
     "validate_output_dir",
 ]
