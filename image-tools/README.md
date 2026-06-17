@@ -34,6 +34,39 @@ python3 scripts/main.py process \
   --width 1024 --height 1024 --format jpg
 ```
 
+## Python API 调用
+
+```python
+from image_tools import process_image
+
+# normalize 流程：EXIF 校正 + 缩放 + 转 JPG
+result = process_image(
+    input_path="input.png",
+    output_path="out.jpg",
+    pipeline=["exif-transpose", "resize", "convert"],
+    width=1024,
+    height=1024,
+    format="jpg",
+    quality=85,
+)
+print(result.output_path, result.width, result.height, result.size_bytes)
+```
+
+```python
+from image_tools import process_directory
+
+# 批量目录处理
+batch = process_directory(
+    input_dir="./photos",
+    output_dir="./processed",
+    pipeline=["exif-transpose", "resize", "convert"],
+    width=1024,
+    height=1024,
+    format="jpg",
+)
+print(batch.success_count, batch.failure_count, batch.log_path)
+```
+
 ## 参数说明
 
 | 参数 | 类型 | 是否必填 | 默认值 | 说明 |
@@ -47,7 +80,10 @@ python3 scripts/main.py process \
 | `--height` | int | resize 必填 | - | 目标高度上限 |
 | `--format` | str | 否 | jpg | jpg/png/webp |
 | `--quality` | int | 否 | 85 | 1-100 |
-| `--keep-exif` | flag | 否 | false | 保留 EXIF |
+| `--box` | str | 否 | - | 命令行画框，格式 name,x,y,width,height,color（可多次使用） |
+| `--boxes-file` | str | 否 | - | JSON 文件：文件名 → Box 列表（批量模式） |
+| `--log-file` | str | 否 | `<output-dir>/image-tools-batch.json` | 批量结果日志路径 |
+| `--keep-exif` | flag | 否 | false | 保留 EXIF 元数据 |
 
 ## 异常说明
 
