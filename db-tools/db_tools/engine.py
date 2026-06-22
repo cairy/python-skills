@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import URL
 
-from db_tools.config import apply_macos_sqlserver_openssl_workaround
 from db_tools.core import ConnectionConfig, DriverNotFoundError
 from db_tools.drivers import find_sqlserver_driver
 
@@ -27,8 +26,6 @@ def create_engine_from_config(config: ConnectionConfig, **kwargs: Any) -> Engine
     Returns:
         A SQLAlchemy Engine instance.
     """
-    apply_macos_sqlserver_openssl_workaround(config)
-
     query: Dict[str, str] = dict(config.query)
 
     if config.driver == "mssql+pyodbc":

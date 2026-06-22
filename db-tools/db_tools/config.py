@@ -155,22 +155,18 @@ def build_config_from_url(url: str) -> ConnectionConfig:
     )
 
 
-def apply_macos_sqlserver_openssl_workaround(config: ConnectionConfig) -> bool:
-    """Apply bundled OpenSSL config on macOS for mssql+pyodbc to allow TLS 1.0.
+def setup_openssl_legacy() -> bool:
+    """Set OPENSSL_CONF to the bundled OpenSSL legacy config on macOS.
 
-    Sets the OPENSSL_CONF environment variable to the bundled config path
-    if running on macOS, the driver is mssql+pyodbc, and OPENSSL_CONF is not
-    already set.
-
-    Args:
-        config: The connection configuration to inspect.
+    This allows Python processes on macOS to use legacy TLS algorithms
+    (e.g. TLS 1.0) when connecting to older database servers. It only has
+    an effect if called before sqlalchemy, pyodbc or the ``ssl`` module
+    initialize OpenSSL.
 
     Returns:
-        True if the workaround was applied, False otherwise.
+        True if the environment variable was set, False otherwise.
     """
     if sys.platform != "darwin":
-        return False
-    if config.driver != "mssql+pyodbc":
         return False
     if os.environ.get("OPENSSL_CONF"):
         return False

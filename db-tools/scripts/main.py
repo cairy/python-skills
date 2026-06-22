@@ -10,24 +10,83 @@
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-from sqlalchemy import text
-from sqlalchemy.engine import Engine
 
 # Allow the script to find db_tools when run directly without installing the package.
 _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
-from db_tools.config import build_config, build_config_from_url, load_env_file
-from db_tools.core import ConnectionConfig, ReadOnlyError
-from db_tools.engine import create_engine_from_config
-from db_tools.metadata import get_columns, get_inspector, list_tables
-from db_tools.query import execute_query, is_read_only_sql
+
+def _bundled_openssl_conf_path() -> Path:
+    """Return path to the bundled OpenSSL legacy config without importing db_tools."""
+    return _SCRIPT_DIR.parent / "db_tools" / "resources" / "openssl_allow_tls1.0.cnf"
+
+
+def _load_env_file_early(path: str) -> None:
+    """Load environment variables from an explicit .env file (stdlib-only)."""
+    env_path = Path(path)
+    if not env_path.exists():
+        return
+    with env_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ[key.strip()] = value.strip()
+
+
+def _driver_from_url(url: str) -> Optional[str]:
+    """Extract drivername from a SQLAlchemy URL without importing sqlalchemy."""
+    if "://" not in url:
+        return None
+    return url.split("://", 1)[0]
+
+
+def _setup_openssl_legacy_early() -> None:
+    """Set OPENSSL_CONF before any third-party import if this looks like macOS SQL Server."""
+    if sys.platform != "darwin":
+        return
+    if os.environ.get("OPENSSL_CONF"):
+        return
+
+    early_parser = argparse.ArgumentParser(add_help=False)
+    early_parser.add_argument("--driver")
+    early_parser.add_argument("--env-file")
+    early_parser.add_argument("--url")
+    early_args, _ = early_parser.parse_known_args()
+
+    if early_args.env_file:
+        _load_env_file_early(early_args.env_file)
+
+    driver = early_args.driver or os.environ.get("DB_DRIVER")
+    if not driver and early_args.url:
+        driver = _driver_from_url(early_args.url)
+
+    if driver != "mssql+pyodbc":
+        return
+
+    conf_path = _bundled_openssl_conf_path()
+    if conf_path.exists():
+        os.environ["OPENSSL_CONF"] = str(conf_path)
+
+
+_setup_openssl_legacy_early()
+
+# Now safe to import third-party libraries that initialise OpenSSL.
+from sqlalchemy import text  # noqa: E402
+from sqlalchemy.engine import Engine  # noqa: E402
+
+from db_tools.config import build_config, build_config_from_url, load_env_file  # noqa: E402
+from db_tools.core import ConnectionConfig, ReadOnlyError  # noqa: E402
+from db_tools.engine import create_engine_from_config  # noqa: E402
+from db_tools.metadata import get_columns, get_inspector, list_tables  # noqa: E402
+from db_tools.query import execute_query, is_read_only_sql  # noqa: E402
 
 
 def _build_config_from_args(args: argparse.Namespace) -> ConnectionConfig:

@@ -4,7 +4,7 @@ description: >
   当用户需要连接关系型数据库、执行 SQL 查询或探查表结构元数据时使用本技能；
   支持 PostgreSQL、MySQL、SQL Server、Oracle、SQLite。
   不提供数据导入导出、数据库迁移、ORM 操作或连接池高级调优。
-  可在 macOS 上自动处理低版本 SQL Server 的 OpenSSL TLS 1.0 兼容问题。
+  可在 macOS 上自动处理低版本 SQL Server 的 OpenSSL TLS 1.0 兼容问题（CLI 自动；Python API 需调用 setup_openssl_legacy()）。
 compatibility:
   python: ">=3.10"
 metadata:
@@ -18,7 +18,7 @@ metadata:
 - **连接诊断**：测试数据库是否可连通，返回驱动、服务端版本、延迟
 - **SQL 执行**：执行 SELECT/INSERT/UPDATE/DELETE/DDL，支持参数化绑定
 - **元数据探查**：列出表名、获取列信息
-- **macOS 兼容**：连接低版本 SQL Server 时自动加载 OpenSSL TLS 1.0 配置
+- **macOS 兼容**：CLI 连接低版本 SQL Server 时自动加载 OpenSSL TLS 1.0 配置；Python API 需在使用 sqlalchemy 前调用 `db_tools.setup_openssl_legacy()`
 
 # 能力边界
 
@@ -27,7 +27,7 @@ metadata:
 - 执行 SQL 并返回 JSON 或表格文本结果
 - 参数化查询（通过 `--params` 传入 JSON）
 - 列出表名、查看表列信息
-- macOS 下自动处理 SQL Server 低版本 OpenSSL 兼容
+- macOS 下 CLI 自动处理 SQL Server 低版本 OpenSSL 兼容；Python API 通过 `setup_openssl_legacy()` 显式启用
 
 ## 不支持
 - 不提供 CSV/Excel 数据导入导出
@@ -114,3 +114,5 @@ with engine.connect() as conn:
 ```
 
 Oracle 的 Thick 模式通过 ``ConnectionConfig`` 的 ``oracle_*`` 字段配置；其他驱动的专属参数（如 PostgreSQL ``sslmode``、SQL Server ``driver`` 覆盖）通过 ``query`` 字典传入，直接写入 SQLAlchemy URL。
+
+macOS 连接低版本 SQL Server 时，Python API 需在 ``import sqlalchemy`` 之前调用 ``db_tools.setup_openssl_legacy()`` 以加载 bundled OpenSSL TLS 1.0 配置；CLI 自动处理无需额外调用。

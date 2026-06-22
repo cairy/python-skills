@@ -7,7 +7,7 @@
 - **连接诊断**：测试数据库连通性，返回驱动、服务端版本与延迟。
 - **SQL 执行**：执行 SELECT / INSERT / UPDATE / DELETE / DDL，支持参数化绑定。
 - **元数据探查**：列出表名、查看表列信息。
-- **macOS SQL Server 兼容**：在 macOS 上连接低版本 SQL Server 时，自动加载 bundled OpenSSL TLS 1.0 配置。
+- **macOS SQL Server 兼容**：CLI 在 macOS 上连接低版本 SQL Server 时自动设置 bundled OpenSSL TLS 1.0 配置；Python API 通过 `db_tools.setup_openssl_legacy()` 显式启用。
 - **只读默认**：CLI 默认只允许 SELECT，DML/DDL 需显式传入 `--allow-write`。
 
 ## 项目结构
@@ -85,6 +85,19 @@ engine = create_engine_from_config(config)
 with engine.connect() as conn:
     result = execute_query(conn, "SELECT * FROM users")
     print(result)
+```
+
+### macOS 连接低版本 SQL Server
+
+macOS 上连接使用 TLS 1.0 的旧版 SQL Server 时，必须在 `sqlalchemy` / `pyodbc` / `ssl` 加载前设置 `OPENSSL_CONF`。CLI 会在解析参数后自动处理；Python API 需在使用 sqlalchemy 前显式调用：
+
+```python
+import db_tools
+db_tools.setup_openssl_legacy()  # macOS 专用，必须在 import sqlalchemy 之前调用
+
+from db_tools import build_config, create_engine_from_config
+config = build_config(driver="mssql+pyodbc", host="...", database="...")
+engine = create_engine_from_config(config)
 ```
 
 ## 测试

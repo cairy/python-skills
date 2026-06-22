@@ -8,7 +8,7 @@ from db_tools.config import (
     build_config,
     build_config_from_url,
     load_env_file,
-    apply_macos_sqlserver_openssl_workaround,
+    setup_openssl_legacy,
 )
 from db_tools.core import ConnectionConfig
 
@@ -77,12 +77,39 @@ def test_load_env_file(tmp_path):
     assert os.environ.get("DB_PORT") == "5432"
 
 
-def test_apply_macos_sqlserver_openssl_workaround_sets_env(monkeypatch):
+def test_setup_openssl_legacy_sets_env_on_macos(monkeypatch):
     monkeypatch.setattr("sys.platform", "darwin")
     monkeypatch.delenv("OPENSSL_CONF", raising=False)
-    cfg = ConnectionConfig(driver="mssql+pyodbc", host="localhost")
     with patch("db_tools.config._bundled_openssl_conf_path") as mock_path:
         mock_path.return_value = Path("/fake/openssl.cnf")
         with patch("pathlib.Path.exists", return_value=True):
-            apply_macos_sqlserver_openssl_workaround(cfg)
+            result = setup_openssl_legacy()
+            assert result is True
             assert os.environ["OPENSSL_CONF"] == "/fake/openssl.cnf"
+
+
+def test_setup_openssl_legacy_noop_on_non_macos(monkeypatch):
+    monkeypatch.setattr("sys.platform", "linux")
+    monkeypatch.delenv("OPENSSL_CONF", raising=False)
+    result = setup_openssl_legacy()
+    assert result is False
+    assert "OPENSSL_CONF" not in os.environ
+
+
+def test_setup_openssl_legacy_noop_when_already_set(monkeypatch):
+    monkeypatch.setattr("sys.platform", "darwin")
+    monkeypatch.setenv("OPENSSL_CONF", "/existing.cnf")
+    result = setup_openssl_legacy()
+    assert result is False
+    assert os.environ["OPENSSL_CONF"] == "/existing.cnf"
+
+
+def test_setup_openssl_legacy_noop_when_config_missing(monkeypatch):
+    monkeypatch.setattr("sys.platform", "darwin")
+    monkeypatch.delenv("OPENSSL_CONF", raising=False)
+    with patch("db_tools.config._bundled_openssl_conf_path") as mock_path:
+        mock_path.return_value = Path("/missing/openssl.cnf")
+        with patch("pathlib.Path.exists", return_value=False):
+            result = setup_openssl_legacy()
+            assert result is False
+            assert "OPENSSL_CONF" not in os.environ

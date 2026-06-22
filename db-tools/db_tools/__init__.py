@@ -6,10 +6,12 @@ from db_tools.core import (
     DriverNotFoundError,
     ReadOnlyError,
 )
-from db_tools.config import build_config, build_config_from_url, load_env_file
-from db_tools.engine import create_engine_from_config
-from db_tools.query import execute_query, execute_raw, is_read_only_sql
-from db_tools.metadata import get_inspector, list_tables, get_columns
+from db_tools.config import (
+    build_config,
+    build_config_from_url,
+    load_env_file,
+    setup_openssl_legacy,
+)
 
 __all__ = [
     "ConnectionConfig",
@@ -19,6 +21,7 @@ __all__ = [
     "build_config",
     "build_config_from_url",
     "load_env_file",
+    "setup_openssl_legacy",
     "create_engine_from_config",
     "execute_query",
     "execute_raw",
@@ -27,3 +30,17 @@ __all__ = [
     "list_tables",
     "get_columns",
 ]
+
+
+def __getattr__(name: str):
+    """Lazy-load engine, query and metadata submodules on first access."""
+    if name == "create_engine_from_config":
+        from db_tools.engine import create_engine_from_config
+        return create_engine_from_config
+    if name in ("execute_query", "execute_raw", "is_read_only_sql"):
+        from db_tools import query
+        return getattr(query, name)
+    if name in ("get_inspector", "list_tables", "get_columns"):
+        from db_tools import metadata
+        return getattr(metadata, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
