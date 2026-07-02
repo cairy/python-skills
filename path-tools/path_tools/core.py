@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import fnmatch
 import os
 import re
 from collections.abc import Iterator
+from pathlib import Path
 
 
 class PathToolsError(ValueError):
@@ -56,7 +55,7 @@ def detect_rule_type(rule: str) -> str:
     Returns:
         str: One of ``"glob"``, ``"regex"``, ``"prefix"`` or ``"direct"``.
     """
-    if "**" in rule or "*" in rule or "?" in rule or "[" in rule:
+    if "*" in rule or "?" in rule or "[" in rule:
         return "glob"
     if any(c in rule for c in _REGEX_CHARS):
         return "regex"
@@ -65,7 +64,13 @@ def detect_rule_type(rule: str) -> str:
     return "direct"
 
 
-def _rule_type_for_path(rule: str) -> str:
+def _detect_path_rule_type(rule: str) -> str:
+    """Decide how a pattern matches a relative path.
+
+    Returns ``glob`` if the rule contains glob characters (``*``, ``?`` or
+    ``[``), ``regex`` if it contains common regex metacharacters, otherwise
+    ``glob`` for an exact-match glob.
+    """
     if any(c in rule for c in _GLOB_CHARS):
         return "glob"
     if any(c in rule for c in _REGEX_CHARS):
@@ -109,8 +114,10 @@ def match_path(rel_path: str, rule: str, rule_type: str) -> bool:
 def find_matching_dirs(root: Path, patterns: list[str]) -> list[Path]:
     """Return directories under ``root`` matching any of the patterns.
 
-    Patterns may be direct names, regexes, globs or directory prefixes. When
-    ``patterns`` is empty, ``root`` itself is returned.
+    ``direct`` and ``regex`` rules match only direct children of ``root`` by
+    directory name. ``glob`` and ``prefix`` rules match against the directory's
+    relative path from ``root``. When ``patterns`` is empty, ``root`` itself is
+    returned.
 
     Args:
         root: Base directory to search.
@@ -157,7 +164,7 @@ def walk(root: Path, pattern: str | None, *, recursive: bool = True, include_dir
         Path: Matching file or directory paths under ``root``.
     """
     rule = pattern or ""
-    rule_type = _rule_type_for_path(rule) if rule else "glob"
+    rule_type = _detect_path_rule_type(rule) if rule else "glob"
 
     if recursive:
         for dirpath, dirnames, filenames in os.walk(root):
