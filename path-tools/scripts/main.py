@@ -30,6 +30,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
+import path_tools.copy as copy_mod
 import path_tools.count as count_mod
 import path_tools.find as find_mod
 import path_tools.list as list_mod
@@ -97,6 +98,13 @@ def main() -> int:
     find_parser.add_argument("--older-than", type=float, default=None, help="最晚修改时间（Unix 时间戳）")
     find_parser.add_argument("--newer-than", type=float, default=None, help="最早修改时间（Unix 时间戳）")
 
+    copy_parser = subparsers.add_parser("copy", help="复制匹配的文件到目标目录")
+    copy_parser.add_argument("root", help="源根目录")
+    copy_parser.add_argument("--pattern", default=None, help="匹配模式")
+    copy_parser.add_argument("--target", required=True, help="目标目录")
+    copy_parser.add_argument("--overwrite", action="store_true", help="覆盖已存在文件")
+    copy_parser.add_argument("--dry-run", action="store_true", help="仅模拟复制")
+
     # placeholder: additional subcommands added in later tasks
 
     try:
@@ -144,6 +152,17 @@ def main() -> int:
                 max_size=args.max_size,
                 older_than=args.older_than,
                 newer_than=args.newer_than,
+            )
+            _success(result)
+            return 0
+
+        if args.command == "copy":
+            result = copy_mod.copy_items(
+                args.root,
+                pattern=args.pattern,
+                target=args.target,
+                overwrite=args.overwrite,
+                dry_run=args.dry_run,
             )
             _success(result)
             return 0
