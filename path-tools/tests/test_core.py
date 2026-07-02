@@ -1,5 +1,6 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 from path_tools.core import (
     PathToolsError,
@@ -65,6 +66,30 @@ def test_find_matching_dirs(tmp_path):
     dirs = find_matching_dirs(tmp_path, ["202[0-9]"])
     names = {d.name for d in dirs}
     assert names == {"2024", "2025"}
+
+
+def test_find_matching_dirs_direct(tmp_path):
+    (tmp_path / "2024").mkdir()
+    (tmp_path / "2025").mkdir()
+    (tmp_path / "archive").mkdir()
+    dirs = find_matching_dirs(tmp_path, ["archive"])
+    assert dirs == [tmp_path / "archive"]
+
+
+def test_find_matching_dirs_regex(tmp_path):
+    (tmp_path / "2024").mkdir()
+    (tmp_path / "2025").mkdir()
+    (tmp_path / "archive").mkdir()
+    dirs = find_matching_dirs(tmp_path, [r"202\d"])
+    names = {d.name for d in dirs}
+    assert names == {"2024", "2025"}
+
+
+def test_find_matching_dirs_empty_patterns(tmp_path):
+    (tmp_path / "2024").mkdir()
+    (tmp_path / "archive").mkdir()
+    dirs = find_matching_dirs(tmp_path, [])
+    assert dirs == [tmp_path]
 
 
 def test_find_matching_dirs_prefix(tmp_path):
