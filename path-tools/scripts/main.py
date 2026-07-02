@@ -30,8 +30,6 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
-from path_tools.core import PathToolsError
-
 
 def _success(data: Any) -> None:
     """输出成功 JSON 到 stdout。"""
@@ -69,10 +67,10 @@ def main() -> int:
         # dispatch handled per subcommand in later tasks
         _success({})
         return 0
-    except PathToolsError as exc:
+    except Exception as exc:
         _error(exc)
         return 1
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())
