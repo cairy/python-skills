@@ -35,6 +35,7 @@ import path_tools.count as count_mod
 import path_tools.find as find_mod
 import path_tools.list as list_mod
 import path_tools.move as move_mod
+import path_tools.rename as rename_mod
 import path_tools.stat as stat_mod
 
 
@@ -113,6 +114,27 @@ def main() -> int:
     move_parser.add_argument("--overwrite", action="store_true", help="覆盖已存在文件")
     move_parser.add_argument("--dry-run", action="store_true", help="仅模拟移动")
 
+    rename_parser = subparsers.add_parser("rename", help="批量重命名匹配的文件")
+    rename_parser.add_argument("root", help="根目录")
+    rename_parser.add_argument("--pattern", default=None, help="匹配模式")
+    rename_parser.add_argument("--normalize", action="store_true", help="规范化文件名")
+    rename_parser.add_argument("--prefix", default=None, help="添加前缀")
+    rename_parser.add_argument("--suffix", default=None, help="添加后缀（插入扩展名前）")
+    rename_parser.add_argument("--strip-prefix", default=None, help="移除前缀")
+    rename_parser.add_argument("--strip-suffix", default=None, help="移除后缀")
+    rename_parser.add_argument("--regex-find", default=None, help="正则查找")
+    rename_parser.add_argument("--regex-replace", default=None, help="正则替换")
+    rename_parser.add_argument("--template", default=None, help="重命名模板")
+    rename_parser.add_argument("--per-dir", action="store_true", help="按目录独立编号")
+    rename_parser.add_argument(
+        "--sort-by",
+        choices=["natural", "lexical", "mtime"],
+        default="natural",
+        help="排序方式",
+    )
+    rename_parser.add_argument("--start", type=int, default=1, help="起始编号")
+    rename_parser.add_argument("--dry-run", action="store_true", help="仅模拟重命名")
+
     # placeholder: additional subcommands added in later tasks
 
     try:
@@ -181,6 +203,26 @@ def main() -> int:
                 pattern=args.pattern,
                 target=args.target,
                 overwrite=args.overwrite,
+                dry_run=args.dry_run,
+            )
+            _success(result)
+            return 0
+
+        if args.command == "rename":
+            result = rename_mod.rename_items(
+                args.root,
+                pattern=args.pattern,
+                normalize=args.normalize,
+                prefix=args.prefix,
+                suffix=args.suffix,
+                strip_prefix=args.strip_prefix,
+                strip_suffix=args.strip_suffix,
+                regex_find=args.regex_find,
+                regex_replace=args.regex_replace,
+                template=args.template,
+                per_dir=args.per_dir,
+                sort_by=args.sort_by,
+                start=args.start,
                 dry_run=args.dry_run,
             )
             _success(result)
