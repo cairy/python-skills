@@ -14,6 +14,7 @@
   move                移动/重命名文件或目录
   rename              批量重命名匹配的文件
   clean               清空目录内容（保留目录本身）
+  delete              删除匹配的文件或目录
 
 成功时 stdout 输出 JSON：{"success": true, "data": ...}
 失败时 stderr 输出错误信息和错误 JSON。
@@ -35,6 +36,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
 import path_tools.clean as clean_mod
 import path_tools.copy as copy_mod
 import path_tools.count as count_mod
+import path_tools.delete as delete_mod
 import path_tools.find as find_mod
 import path_tools.list as list_mod
 import path_tools.move as move_mod
@@ -148,6 +150,12 @@ def main() -> int:
     )
     clean_parser.add_argument("--dry-run", action="store_true", help="仅模拟清空")
 
+    delete_parser = subparsers.add_parser("delete", help="删除匹配的文件或目录")
+    delete_parser.add_argument("root", help="根目录")
+    delete_parser.add_argument("--pattern", default=None, help="匹配模式")
+    delete_parser.add_argument("--force", action="store_true", help="强制删除非空目录")
+    delete_parser.add_argument("--dry-run", action="store_true", help="仅模拟删除")
+
     # placeholder: additional subcommands added in later tasks
 
     try:
@@ -245,6 +253,16 @@ def main() -> int:
             result = clean_mod.clean_dir(
                 args.root,
                 skip=args.skip,
+                dry_run=args.dry_run,
+            )
+            _success(result)
+            return 0
+
+        if args.command == "delete":
+            result = delete_mod.delete_items(
+                args.root,
+                pattern=args.pattern,
+                force=args.force,
                 dry_run=args.dry_run,
             )
             _success(result)
