@@ -10,7 +10,7 @@
     {
       "id": 2,
       "prompt": "统计 path-tools/evals/files/sample 目录下 .txt 文件数量，按 root 的直接子目录分组",
-      "expected_output": "stdout 输出 JSON，success 为 true，data 为 {\".\": 2}（sub 属于 sample 子目录，若按直接子目录分组则根目录层级文件归入 \".\"）",
+      "expected_output": "stdout 输出 JSON，success 为 true，data 为 {\".\": 2, \"sub\": 1}（根目录层级文件归入 \".\"，sub 目录下文件归入 \"sub\"）",
       "files": ["evals/files/sample"]
     }
   ]
