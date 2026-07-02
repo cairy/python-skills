@@ -5,13 +5,14 @@
 
 """path-tools CLI 入口 — AI 标准化调用脚本。
 
-支持子命令（计划）：
+支持子命令：
   list                列出目录内容
-  find                按名称/Glob 查找文件
+  count               统计匹配的文件/目录数量
+  stat                统计匹配路径的属性
+  find                按大小/时间等条件查找文件
   copy                复制文件
   move                移动/重命名文件或目录
-  mkdir               创建目录
-  exists              检查路径是否存在
+  rename              批量重命名匹配的文件
 
 成功时 stdout 输出 JSON：{"success": true, "data": ...}
 失败时 stderr 输出错误信息和错误 JSON。

@@ -6,10 +6,10 @@ import re
 import uuid
 from pathlib import Path
 
-from path_tools.core import resolve_root, walk
+from path_tools.core import PathToolsError, resolve_root, walk
 
 
-def _natural_sort_key(name: str):
+def _natural_sort_key(name: str) -> list[int | str]:
     parts = re.split(r"(\d+)", name)
     return [int(p) if p.isdigit() else p.lower() for p in parts if p != ""]
 
@@ -68,6 +68,17 @@ def rename_items(
     elif sort_by == "mtime":
         files.sort(key=lambda p: p.stat().st_mtime)
 
+    if not any(
+        [normalize, prefix, suffix, strip_prefix, strip_suffix, regex_find, template]
+    ):
+        raise PathToolsError(
+            "至少指定一个重命名操作（如 --normalize/--prefix/--suffix/--regex-find/--template）"
+        )
+
+    compiled_regex = None
+    if regex_find is not None:
+        compiled_regex = re.compile(regex_find)
+
     groups: dict[str, list[Path]] = {}
     if per_dir:
         for p in files:
@@ -83,6 +94,7 @@ def rename_items(
         tag = uuid.uuid4().hex[:12]
         temps: list[tuple[Path, Path]] = []
         finals: list[tuple[Path, Path]] = []
+        dest_paths: set[Path] = set()
 
         for i, src in enumerate(group_files, start=start):
             parent = src.parent
@@ -109,8 +121,8 @@ def rename_items(
                     base, ext = name[:idx], name[idx:]
                 name = base + suffix + ext
 
-            if regex_find is not None and regex_replace is not None:
-                name = re.sub(regex_find, regex_replace, name)
+            if compiled_regex is not None and regex_replace is not None:
+                name = compiled_regex.sub(regex_replace, name)
 
             if template is not None:
                 name = _apply_template(template, name, i, parent_rel, mtime)
@@ -118,6 +130,10 @@ def rename_items(
             dest = parent / name
             if src.resolve() == dest.resolve():
                 continue
+            if dest in dest_paths:
+                failed.append({"path": str(src), "error": f"目标命名冲突: {dest}"})
+                continue
+            dest_paths.add(dest)
             if dest.exists():
                 failed.append({"path": str(src), "error": f"目标已存在: {dest}"})
                 continue
@@ -134,6 +150,6 @@ def rename_items(
                     a.rename(b)
                 succeeded.append(str(b.relative_to(root_path)).replace("\\", "/"))
         except Exception as exc:
-            failed.append({"path": str(src), "error": str(exc)})
+            failed.append({"path": str(a), "error": str(exc)})
 
     return {"succeeded": succeeded, "failed": failed}
