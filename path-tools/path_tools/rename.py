@@ -21,14 +21,11 @@ def _normalize_name(name: str) -> str:
     return name
 
 
-def _apply_template(template: str, path: Path, index: int, root: Path) -> str:
-    stem = path.stem
-    suffix = path.suffix
-    parent = str(path.parent.relative_to(root)).replace("\\", "/") if path.parent != root else ""
-    try:
-        mtime = path.stat().st_mtime
-    except OSError:
-        mtime = 0.0
+def _apply_template(template: str, name: str, index: int, parent: str, mtime: float) -> str:
+    stem, suffix = name, ""
+    if "." in name[1:]:
+        idx = name.rfind(".")
+        stem, suffix = name[:idx], name[idx:]
     context = {
         "stem": stem,
         "suffix": suffix,
@@ -90,6 +87,11 @@ def rename_items(
         for i, src in enumerate(group_files, start=start):
             parent = src.parent
             name = src.name
+            parent_rel = str(src.parent.relative_to(root_path)).replace("\\", "/") if src.parent != root_path else ""
+            try:
+                mtime = src.stat().st_mtime
+            except OSError:
+                mtime = 0.0
 
             if normalize:
                 name = _normalize_name(name)
@@ -111,7 +113,7 @@ def rename_items(
                 name = re.sub(regex_find, regex_replace, name)
 
             if template is not None:
-                name = _apply_template(template, src, i, root_path)
+                name = _apply_template(template, name, i, parent_rel, mtime)
 
             dest = parent / name
             if src.resolve() == dest.resolve():

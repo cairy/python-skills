@@ -10,6 +10,18 @@ def test_rename_template(tmp_path):
     assert (tmp_path / "b_02.txt").exists()
 
 
+def test_rename_chain(tmp_path):
+    (tmp_path / "A B.txt").write_text("x")
+    result = rename_items(
+        str(tmp_path),
+        pattern="*.txt",
+        normalize=True,
+        prefix="pre_",
+        template="{stem}_{index:02d}{suffix}",
+    )
+    assert (tmp_path / "pre_a_b_01.txt").exists()
+
+
 def test_rename_per_dir(tmp_path):
     (tmp_path / "d1").mkdir()
     (tmp_path / "d2").mkdir()
