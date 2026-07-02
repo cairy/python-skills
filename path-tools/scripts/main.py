@@ -30,6 +30,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
+import path_tools.count as count_mod
 import path_tools.list as list_mod
 
 
@@ -71,6 +72,17 @@ def main() -> int:
     list_parser.add_argument("--no-recursive", action="store_true", help="仅遍历直接子项")
     list_parser.add_argument("--include-dirs", action="store_true", help="包含目录")
 
+    count_parser = subparsers.add_parser("count", help="统计匹配的文件/目录数量")
+    count_parser.add_argument("root", help="根目录")
+    count_parser.add_argument("--pattern", default=None, help="匹配模式")
+    count_parser.add_argument(
+        "--group-by-dir",
+        nargs="?",
+        const=True,
+        default=None,
+        help="按目录分组；可接目录模式，省略时按 root 直接子目录分组",
+    )
+
     # placeholder: additional subcommands added in later tasks
 
     try:
@@ -92,6 +104,15 @@ def main() -> int:
                 pattern=args.pattern,
                 recursive=not args.no_recursive,
                 include_dirs=args.include_dirs,
+            )
+            _success(result)
+            return 0
+
+        if args.command == "count":
+            result = count_mod.count_items(
+                args.root,
+                pattern=args.pattern,
+                group_by_dir=args.group_by_dir,
             )
             _success(result)
             return 0
