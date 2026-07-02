@@ -34,6 +34,7 @@ import path_tools.copy as copy_mod
 import path_tools.count as count_mod
 import path_tools.find as find_mod
 import path_tools.list as list_mod
+import path_tools.move as move_mod
 import path_tools.stat as stat_mod
 
 
@@ -105,6 +106,13 @@ def main() -> int:
     copy_parser.add_argument("--overwrite", action="store_true", help="覆盖已存在文件")
     copy_parser.add_argument("--dry-run", action="store_true", help="仅模拟复制")
 
+    move_parser = subparsers.add_parser("move", help="移动匹配的文件到目标目录")
+    move_parser.add_argument("root", help="源根目录")
+    move_parser.add_argument("--pattern", default=None, help="匹配模式")
+    move_parser.add_argument("--target", required=True, help="目标目录")
+    move_parser.add_argument("--overwrite", action="store_true", help="覆盖已存在文件")
+    move_parser.add_argument("--dry-run", action="store_true", help="仅模拟移动")
+
     # placeholder: additional subcommands added in later tasks
 
     try:
@@ -158,6 +166,17 @@ def main() -> int:
 
         if args.command == "copy":
             result = copy_mod.copy_items(
+                args.root,
+                pattern=args.pattern,
+                target=args.target,
+                overwrite=args.overwrite,
+                dry_run=args.dry_run,
+            )
+            _success(result)
+            return 0
+
+        if args.command == "move":
+            result = move_mod.move_items(
                 args.root,
                 pattern=args.pattern,
                 target=args.target,
