@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "path-tools"
+version = "0.1.0"
+authors = [{ name = "python-skills" }]
+description = "当用户需要对本地文件/目录进行遍历、计数、属性查看、查找、复制、移动、重命名、清空或删除时使用本技能"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["path_tools*"]
+
+[project.urls]
+"Homepage" = "https://github.com/cairy/python-skills/tree/main/path-tools"
