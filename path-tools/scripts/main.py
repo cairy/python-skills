@@ -8,7 +8,7 @@
 支持子命令（计划）：
   list                列出目录内容
   find                按名称/Glob 查找文件
-  copy                复制文件或目录
+  copy                复制文件
   move                移动/重命名文件或目录
   mkdir               创建目录
   exists              检查路径是否存在

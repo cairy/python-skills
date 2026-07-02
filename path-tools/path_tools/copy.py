@@ -25,7 +25,10 @@ def copy_items(
     for src in walk(root_path, pattern, recursive=True):
         if src.is_dir():
             continue
+        if src == target_path or target_path in src.parents:
+            continue
         rel = src.relative_to(root_path)
+        rel_posix = str(rel).replace("\\", "/")
         dest = target_path / rel
         try:
             if dest.exists() and not overwrite:
@@ -33,8 +36,8 @@ def copy_items(
             if not dry_run:
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dest)
-            succeeded.append(str(rel).replace("\\", "/"))
+            succeeded.append(rel_posix)
         except Exception as exc:
-            failed.append({"path": str(rel).replace("\\", "/"), "error": str(exc)})
+            failed.append({"path": rel_posix, "error": str(exc)})
 
     return {"succeeded": succeeded, "failed": failed}
