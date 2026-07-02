@@ -13,6 +13,7 @@
   copy                复制文件
   move                移动/重命名文件或目录
   rename              批量重命名匹配的文件
+  clean               清空目录内容（保留目录本身）
 
 成功时 stdout 输出 JSON：{"success": true, "data": ...}
 失败时 stderr 输出错误信息和错误 JSON。
@@ -31,6 +32,7 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
+import path_tools.clean as clean_mod
 import path_tools.copy as copy_mod
 import path_tools.count as count_mod
 import path_tools.find as find_mod
@@ -136,6 +138,16 @@ def main() -> int:
     rename_parser.add_argument("--start", type=int, default=1, help="起始编号")
     rename_parser.add_argument("--dry-run", action="store_true", help="仅模拟重命名")
 
+    clean_parser = subparsers.add_parser("clean", help="清空目录内容（保留目录本身）")
+    clean_parser.add_argument("root", help="目标目录")
+    clean_parser.add_argument(
+        "--skip",
+        action="append",
+        default=None,
+        help="保留的子项名称；可多次指定",
+    )
+    clean_parser.add_argument("--dry-run", action="store_true", help="仅模拟清空")
+
     # placeholder: additional subcommands added in later tasks
 
     try:
@@ -224,6 +236,15 @@ def main() -> int:
                 per_dir=args.per_dir,
                 sort_by=args.sort_by,
                 start=args.start,
+                dry_run=args.dry_run,
+            )
+            _success(result)
+            return 0
+
+        if args.command == "clean":
+            result = clean_mod.clean_dir(
+                args.root,
+                skip=args.skip,
                 dry_run=args.dry_run,
             )
             _success(result)
