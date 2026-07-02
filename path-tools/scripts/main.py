@@ -27,7 +27,16 @@ def main() -> int:
     # placeholder: subcommands added in later tasks
     _ = subparsers
 
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit as exc:
+        code = exc.code
+        if code is None or code == 0:
+            return 0
+        err = {"success": False, "error": "参数错误"}
+        print(json.dumps(err, ensure_ascii=False), file=sys.stderr)
+        return 1
+
     try:
         # dispatch handled per subcommand in later tasks
         print(json.dumps({"success": True, "data": {}}, ensure_ascii=False))
