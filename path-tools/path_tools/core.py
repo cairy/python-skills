@@ -78,19 +78,22 @@ def _detect_path_rule_type(rule: str) -> str:
     return "glob"
 
 
-def match_path(rel_path: str, rule: str, rule_type: str) -> bool:
+def match_path(rel_path: str, rule: str, rule_type: str, *, cross_dir: bool = False) -> bool:
     """Match a relative path string against a rule.
 
     ``rel_path`` is normalised to forward slashes before matching. Glob rules
     without a slash only match entries directly under the root (i.e. paths
-    without a separator). Regex rules are applied unchanged so that backslash
-    escapes remain valid.
+    without a separator), unless ``cross_dir`` is ``True``. Regex rules are
+    applied unchanged so that backslash escapes remain valid.
 
     Args:
         rel_path: Relative path string (using ``/`` or ``\\`` separators).
         rule: Rule pattern string.
         rule_type: Matching strategy; one of ``"glob"``, ``"regex"`` or any
             other value for prefix matching.
+        cross_dir: When ``True`` and ``rule`` is a glob that was auto-expanded
+            with a ``**/`` prefix for recursive walking, also allow the suffix
+            to match the whole relative path. Defaults to ``False``.
 
     Returns:
         bool: ``True`` if the path matches the rule, otherwise ``False``.
@@ -98,6 +101,11 @@ def match_path(rel_path: str, rule: str, rule_type: str) -> bool:
     rel_path = rel_path.replace("\\", "/")
     if rule_type == "glob":
         rule = rule.replace("\\", "/")
+        if cross_dir and rule.startswith("**/"):
+            # Auto-expanded recursive glob: also allow matching the suffix
+            # directly so root-level entries are included.
+            if fnmatch.fnmatch(rel_path, rule[3:]):
+                return True
         # A glob without a slash should not cross directory boundaries.
         if "/" in rel_path and "/" not in rule:
             return False
@@ -165,6 +173,9 @@ def walk(root: Path, pattern: str | None, *, recursive: bool = True, include_dir
     """
     rule = pattern or ""
     rule_type = _detect_path_rule_type(rule) if rule else "glob"
+    cross_dir = recursive and rule_type == "glob" and rule and "/" not in rule
+    if cross_dir:
+        rule = f"**/{rule}"
 
     if recursive:
         for dirpath, dirnames, filenames in os.walk(root):
@@ -173,12 +184,12 @@ def walk(root: Path, pattern: str | None, *, recursive: bool = True, include_dir
                 for dirname in dirnames:
                     p = dirpath_path / dirname
                     rel = str(p.relative_to(root)).replace("\\", "/")
-                    if not rule or match_path(rel, rule, rule_type):
+                    if not rule or match_path(rel, rule, rule_type, cross_dir=cross_dir):
                         yield p
             for filename in filenames:
                 p = dirpath_path / filename
                 rel = str(p.relative_to(root)).replace("\\", "/")
-                if not rule or match_path(rel, rule, rule_type):
+                if not rule or match_path(rel, rule, rule_type, cross_dir=cross_dir):
                     yield p
     else:
         for p in root.iterdir():

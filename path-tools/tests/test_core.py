@@ -124,3 +124,31 @@ def test_walk_include_dirs(tmp_path):
     results = sorted(str(p.relative_to(tmp_path)) for p in walk(tmp_path, None, include_dirs=True))
     assert "sub" in results
     assert "sub/a.txt" in results
+
+
+def test_walk_glob_recursive_matches_nested():
+    """A glob like *.txt should match nested files when recursive=True."""
+    from path_tools.core import walk
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "a.txt").write_text("a")
+        (root / "sub").mkdir()
+        (root / "sub" / "b.txt").write_text("b")
+        results = sorted(str(p.relative_to(root)).replace("\\", "/") for p in walk(root, "*.txt", recursive=True))
+        assert results == ["a.txt", "sub/b.txt"]
+
+
+def test_walk_glob_non_recursive_does_not_match_nested():
+    """A glob like *.txt should only match direct children when recursive=False."""
+    from path_tools.core import walk
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        (root / "a.txt").write_text("a")
+        (root / "sub").mkdir()
+        (root / "sub" / "b.txt").write_text("b")
+        results = sorted(str(p.relative_to(root)).replace("\\", "/") for p in walk(root, "*.txt", recursive=False))
+        assert results == ["a.txt"]

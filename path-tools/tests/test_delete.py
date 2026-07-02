@@ -15,9 +15,9 @@ def test_delete_files(tmp_path):
 
     assert not (tmp_path / "a.txt").exists()
     assert not (tmp_path / "b.txt").exists()
+    assert not (sub / "d.txt").exists()
     assert (tmp_path / "c.jpg").exists()
-    assert (sub / "d.txt").exists()
-    assert sorted(result["succeeded"]) == ["a.txt", "b.txt"]
+    assert sorted(result["succeeded"]) == ["a.txt", "b.txt", "sub/d.txt"]
     assert result["failed"] == []
 
 
