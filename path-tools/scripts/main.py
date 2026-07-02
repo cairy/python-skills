@@ -38,9 +38,9 @@ def _success(data: Any) -> None:
     print(json.dumps({"success": True, "data": data}, ensure_ascii=False))
 
 
-def _error(e: Exception) -> None:
+def _error(e: Exception, *, error_type: str | None = None) -> None:
     """输出错误信息到 stderr。"""
-    err_type = type(e).__name__
+    err_type = error_type or type(e).__name__
     msg = str(e)
     print(f"Error: {msg}", file=sys.stderr)
     print(
@@ -49,14 +49,25 @@ def _error(e: Exception) -> None:
     )
 
 
+class _ArgumentParser(argparse.ArgumentParser):
+    """ArgumentParser that captures the last error message."""
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.last_error: str | None = None
+
+    def error(self, message: str) -> None:
+        self.last_error = message
+        super().error(message)
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="本地文件/目录操作工具集")
+    parser = _ArgumentParser(description="本地文件/目录操作工具集")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     list_parser = subparsers.add_parser("list", help="列出匹配的文件/目录")
     list_parser.add_argument("root", help="根目录")
     list_parser.add_argument("--pattern", default=None, help="匹配模式 (glob/正则/前缀)")
-    list_parser.add_argument("--recursive", action="store_true", default=True, help="递归遍历 (默认)")
     list_parser.add_argument("--no-recursive", action="store_true", help="仅遍历直接子项")
     list_parser.add_argument("--include-dirs", action="store_true", help="包含目录")
 
@@ -68,7 +79,10 @@ def main() -> int:
         code = exc.code
         if code is None or code == 0:
             return 0
-        _error(ValueError("参数错误: 缺少 command 子命令"))
+        msg = "参数错误"
+        if parser.last_error:
+            msg = f"参数错误: {parser.last_error}"
+        _error(ValueError(msg), error_type="SystemExit")
         return 1
 
     try:
