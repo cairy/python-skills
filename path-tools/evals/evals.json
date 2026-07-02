@@ -1,0 +1,17 @@
+{
+  "skill_name": "path-tools",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "列出 path-tools/evals/files/sample 目录下所有 .txt 文件（递归），返回相对路径列表",
+      "expected_output": "stdout 输出 JSON，success 为 true，data 包含 a.txt、btxt、sub/c.txt",
+      "files": ["evals/files/sample/a.txt", "evals/files/sample/b.txt", "evals/files/sample/sub/c.txt"]
+    },
+    {
+      "id": 2,
+      "prompt": "统计 path-tools/evals/files/sample 目录下 .txt 文件数量，按 root 的直接子目录分组",
+      "expected_output": "stdout 输出 JSON，success 为 true，data 为 {\"sample\": 2}（sub 属于 sample 子目录，若按直接子目录分组则 sample 目录自身为组）",
+      "files": ["evals/files/sample"]
+    }
+  ]
+}
