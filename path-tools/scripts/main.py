@@ -30,6 +30,8 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
+import path_tools.list as list_mod
+
 
 def _success(data: Any) -> None:
     """输出成功 JSON 到 stdout。"""
@@ -51,8 +53,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="本地文件/目录操作工具集")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # placeholder: subcommands added in later tasks
-    _ = subparsers
+    list_parser = subparsers.add_parser("list", help="列出匹配的文件/目录")
+    list_parser.add_argument("root", help="根目录")
+    list_parser.add_argument("--pattern", default=None, help="匹配模式 (glob/正则/前缀)")
+    list_parser.add_argument("--recursive", action="store_true", default=True, help="递归遍历 (默认)")
+    list_parser.add_argument("--no-recursive", action="store_true", help="仅遍历直接子项")
+    list_parser.add_argument("--include-dirs", action="store_true", help="包含目录")
+
+    # placeholder: additional subcommands added in later tasks
 
     try:
         args = parser.parse_args()
@@ -64,6 +72,16 @@ def main() -> int:
         return 1
 
     try:
+        if args.command == "list":
+            result = list_mod.list_items(
+                args.root,
+                pattern=args.pattern,
+                recursive=not args.no_recursive,
+                include_dirs=args.include_dirs,
+            )
+            _success(result)
+            return 0
+
         # dispatch handled per subcommand in later tasks
         _success({})
         return 0
