@@ -32,6 +32,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
 
 import path_tools.count as count_mod
 import path_tools.list as list_mod
+import path_tools.stat as stat_mod
 
 
 def _success(data: Any) -> None:
@@ -83,6 +84,10 @@ def main() -> int:
         help="按目录分组；可接目录模式，省略时按 root 直接子目录分组",
     )
 
+    stat_parser = subparsers.add_parser("stat", help="统计匹配路径的属性")
+    stat_parser.add_argument("root", help="根目录")
+    stat_parser.add_argument("--pattern", default=None, help="匹配模式")
+
     # placeholder: additional subcommands added in later tasks
 
     try:
@@ -114,6 +119,11 @@ def main() -> int:
                 pattern=args.pattern,
                 group_by_dir=args.group_by_dir,
             )
+            _success(result)
+            return 0
+
+        if args.command == "stat":
+            result = stat_mod.stat_items(args.root, pattern=args.pattern)
             _success(result)
             return 0
 
