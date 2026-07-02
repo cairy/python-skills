@@ -1,6 +1,5 @@
 """Tests for path_tools.delete."""
 
-from path_tools.core import PathToolsError
 from path_tools.delete import delete_items
 
 
@@ -68,3 +67,20 @@ def test_delete_force_nonempty_dir(tmp_path):
 
     assert not target.exists()
     assert "nonempty" in result["succeeded"]
+
+
+def test_delete_symlink_to_dir(tmp_path):
+    target = tmp_path / "target_dir"
+    target.mkdir()
+    (target / "file.txt").write_text("content")
+    symlink = tmp_path / "link_dir"
+    symlink.symlink_to(target)
+
+    result = delete_items(str(tmp_path), pattern="link_dir")
+
+    assert not symlink.exists()
+    assert symlink.is_symlink() is False
+    assert target.exists()
+    assert (target / "file.txt").exists()
+    assert "link_dir" in result["succeeded"]
+    assert result["failed"] == []
