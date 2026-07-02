@@ -43,7 +43,7 @@ def count_items(
         counter: dict[str, int] = Counter()
         for p in walk(root_path, pattern, recursive=True):
             rel = p.relative_to(root_path)
-            group = rel.parts[0] if rel.parts else "."
+            group = rel.parts[0] if len(rel.parts) > 1 else "."
             counter[group] += 1
         return dict(sorted(counter.items()))
     if isinstance(group_by_dir, str):
