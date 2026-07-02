@@ -92,8 +92,8 @@ def rename_items(
 
     for group_files in groups.values():
         tag = uuid.uuid4().hex[:12]
-        temps: list[tuple[Path, Path]] = []
-        finals: list[tuple[Path, Path]] = []
+        temps: list[tuple[Path, Path, Path]] = []
+        finals: list[tuple[Path, Path, Path]] = []
         dest_paths: set[Path] = set()
 
         for i, src in enumerate(group_files, start=start):
@@ -138,18 +138,18 @@ def rename_items(
                 failed.append({"path": str(src), "error": f"目标已存在: {dest}"})
                 continue
             temp = parent / f".__rename_{tag}_{i}_{name}"
-            temps.append((src, temp))
-            finals.append((temp, dest))
+            temps.append((src, temp, src))
+            finals.append((temp, dest, src))
 
         try:
-            for a, b in temps:
+            for src_orig, temp, _ in temps:
                 if not dry_run:
-                    a.rename(b)
-            for a, b in finals:
+                    src_orig.rename(temp)
+            for temp, dest, src_orig in finals:
                 if not dry_run:
-                    a.rename(b)
-                succeeded.append(str(b.relative_to(root_path)).replace("\\", "/"))
+                    temp.rename(dest)
+                succeeded.append(str(dest.relative_to(root_path)).replace("\\", "/"))
         except Exception as exc:
-            failed.append({"path": str(a), "error": str(exc)})
+            failed.append({"path": str(src_orig), "error": str(exc)})
 
     return {"succeeded": succeeded, "failed": failed}
