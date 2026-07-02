@@ -31,6 +31,7 @@ if str(_SCRIPT_DIR.parent) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR.parent))
 
 import path_tools.count as count_mod
+import path_tools.find as find_mod
 import path_tools.list as list_mod
 import path_tools.stat as stat_mod
 
@@ -88,6 +89,14 @@ def main() -> int:
     stat_parser.add_argument("root", help="根目录")
     stat_parser.add_argument("--pattern", default=None, help="匹配模式")
 
+    find_parser = subparsers.add_parser("find", help="按大小/时间等条件查找文件")
+    find_parser.add_argument("root", help="根目录")
+    find_parser.add_argument("--pattern", default=None, help="匹配模式")
+    find_parser.add_argument("--min-size", default=None, help="最小大小（字节或 1K/M/G/T）")
+    find_parser.add_argument("--max-size", default=None, help="最大大小")
+    find_parser.add_argument("--older-than", type=float, default=None, help="最晚修改时间（Unix 时间戳）")
+    find_parser.add_argument("--newer-than", type=float, default=None, help="最早修改时间（Unix 时间戳）")
+
     # placeholder: additional subcommands added in later tasks
 
     try:
@@ -124,6 +133,18 @@ def main() -> int:
 
         if args.command == "stat":
             result = stat_mod.stat_items(args.root, pattern=args.pattern)
+            _success(result)
+            return 0
+
+        if args.command == "find":
+            result = find_mod.find_items(
+                args.root,
+                pattern=args.pattern,
+                min_size=args.min_size,
+                max_size=args.max_size,
+                older_than=args.older_than,
+                newer_than=args.newer_than,
+            )
             _success(result)
             return 0
 
